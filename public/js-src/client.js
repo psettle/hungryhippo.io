@@ -4,7 +4,7 @@ const ws = new WebSocket('ws://localhost/ws');
 
 ws.addEventListener('open', () => {
     // Send a message to the WebSocket server
-    ws.send(JSON.stringify({ message: "Hello!"}));
+    ws.send(JSON.stringify({ type: "Hello!"}));
   });
 
 ws.addEventListener('message', event => {
