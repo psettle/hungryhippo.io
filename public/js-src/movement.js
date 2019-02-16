@@ -6,24 +6,19 @@ window.onload = function () {
     document.addEventListener("keydown", function onEvent(event) {
         if (event.key === "ArrowLeft") {
             currentX--;
-            updatePositionString();
+            sendPositionUpdateMessage(currentX, currentY, 0)
         }
         if (event.key === "ArrowRight") {
             currentX++;
-            updatePositionString();
+            sendPositionUpdateMessage(currentX, currentY, 0)
         }
         if (event.key === "ArrowDown") {
             currentY--;
-            updatePositionString();
+            sendPositionUpdateMessage(currentX, currentY, 0)
         }
         if (event.key === "ArrowUp") {
             currentY++;
-            updatePositionString();
+            sendPositionUpdateMessage(currentX, currentY, 0)
         }
     });
-
-    function updatePositionString() {
-        document.getElementById("positionIndicator").innerHTML = 
-            "You are at position (" + currentX + ", " + currentY + ")";
-    }
 }
