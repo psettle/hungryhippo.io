@@ -6,7 +6,7 @@ import (
 	"github.com/mediocregopher/radix.v2/pool"
 	"log"
 	"math/rand"
-	//"encoding/json"
+	"strconv"
 )
 
 type Player struct {
@@ -41,12 +41,14 @@ func initDatabase() {
 func main() {
 
 	p1 := createPlayer("Chris")
-	fmt.Println(p1)
-	fmt.Println(p1.location())
-	fmt.Println(p1.json())
 	initDatabase()
 	p1.savePlayer()
-	getPlayer(81)
+	playerMap := getPlayer(81)
+	playerStruct, err := createPlayerFromMap(playerMap)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(playerStruct)
 }
 
 // create player with randomly generated id and location
@@ -92,6 +94,7 @@ func (p *Player) savePlayer() {
 
 	response := database.Cmd("HMSET",
 		p.Id,
+		"id", p.Id,
 		"name", p.Name,
 		"score", p.Score,
 		"x", p.Location.X,
@@ -103,10 +106,41 @@ func (p *Player) savePlayer() {
 	}
 }
 
-func getPlayer(id int) {
+func getPlayer(id int) map[string]string {
 	reply, err := database.Cmd("HGETALL", id).Map()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(reply)
+	return reply
+}
+
+func createPlayerFromMap(reply map[string]string) (*Player, error) {
+	var err error
+	loc := new(Location)
+	loc.Direction, err = strconv.Atoi(reply["direction"])
+	if err != nil {
+		return nil, err
+	}
+	loc.X, err = strconv.Atoi(reply["x"])
+	if err != nil {
+		return nil, err
+	}
+	loc.Y, err = strconv.Atoi(reply["y"])
+	if err != nil {
+		return nil, err
+	}
+	player := new(Player)
+	player.Id, err = strconv.Atoi(reply["id"])
+	if err != nil {
+		return nil, err
+	}
+	player.Name = reply["name"]
+	player.Score, err = strconv.Atoi(reply["score"])
+	if err != nil {
+		return nil, err
+	}
+	player.Location = *loc
+
+	return player, nil
 }
