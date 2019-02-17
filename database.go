@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mediocregopher/radix.v2/redis"
+	"github.com/mediocregopher/radix.v2/pool"
 	"log"
 	"math/rand"
 	//"encoding/json"
@@ -22,35 +22,31 @@ type Location struct {
 	Direction int `json:"direction"`
 }
 
-func main() {
-	// Establish a connection to the Redis server listening on port 6379 of the
-	// local machine. 6379 is the default port
-	conn, err := redis.Dial("tcp", "localhost:6379")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Importantly, use defer to ensure the connection is always properly
-	// closed before exiting the main() function.
-	defer conn.Close()
+// Declare a global database variable to store the Redis connection pool.
+var database *pool.Pool
 
-	// Send our command across the connection. The first parameter to Cmd()
-	// is always the name of the Redis command (in this example HMSET),
-	// optionally followed by any necessary arguments (in this example the
-	// key, followed by the various hash fields and values).
+// initialize database with the line below NOTE: MUST HAVE DOCKER AND REDIS INSTALLED
+//docker run -p 6379:6379 --name test-r -d redis
+func initDatabase() {
+	var err error
+	// Establish a pool of 10 connections to the Redis server listening on
+	// port 6379 of the local machine.
+	database, err = pool.New("tcp", "localhost:6379", 10)
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+// Used for local testing purposes, will need to comment out when merged into project.
+func main() {
 
 	p1 := createPlayer("Chris")
 	fmt.Println(p1)
 	fmt.Println(p1.location())
 	fmt.Println(p1.json())
-	//resp := conn.Cmd("JSON.SET", "players", ".", p1.json())
-	////Check the Err field of the *Resp object for any errors.
-	//if resp.Err != nil {
-	//	log.Fatal(resp.Err)
-	//}
-	//players := conn.Cmd("JSON.GET", "players")
-	//var test Player
-	//json.Unmarshal(players, &test)
-	//fmt.Println(players)
+	initDatabase()
+	p1.savePlayer()
+	getPlayer(81)
 }
 
 // create player with randomly generated id and location
@@ -90,4 +86,27 @@ func (p *Player) location() string {
 	} else {
 		return string(location)
 	}
+}
+
+func (p *Player) savePlayer() {
+
+	response := database.Cmd("HMSET",
+		p.Id,
+		"name", p.Name,
+		"score", p.Score,
+		"x", p.Location.X,
+		"y", p.Location.Y,
+		"direction", p.Location.Direction)
+
+	if response.Err != nil {
+		log.Fatal(response.Err)
+	}
+}
+
+func getPlayer(id int) {
+	reply, err := database.Cmd("HGETALL", id).Map()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(reply)
 }
