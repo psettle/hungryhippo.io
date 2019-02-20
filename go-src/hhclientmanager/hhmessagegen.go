@@ -11,10 +11,19 @@ import (
 )
 
 const (
-	newPlayerRequest      = iota
-	newPlayerResponse     = iota
-	positionUpdateRequest = iota
-	positionUpdateMessage = iota
+	newPlayerRequest  = iota //A new player requests to join the game
+	newPlayerResponse = iota //Server acknowledging new player request, provided initial condition
+
+	positionUpdateRequest = iota //A player asks to be moved to a new location
+	positionUpdateMessage = iota //Server tells player about the position of all players
+
+	consumeFruitRequest  = iota //A player asks to consume an existing fruit
+	consumeFruitResponse = iota //server accepts/denies consumption request
+	newFruitMessage      = iota //the server has generated a new fruit
+
+	consumePlayerRequest  = iota //a player asks to consume another player
+	consumePlayerResponse = iota //the server accepts/denies the consumption request
+	playerDeathMessage    = iota //server notififies a player that they have died, and must submit a new newPlayerRequest
 )
 
 func createNewPlayerResponse(player *hhdatabase.Player) (*simplejson.Json, error) {
