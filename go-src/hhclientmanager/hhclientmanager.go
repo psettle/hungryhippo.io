@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/bitly/go-simplejson"
 	uuid "github.com/satori/go.uuid"
@@ -32,6 +33,33 @@ func HandleClients() {
 			}
 		}
 	}()
+
+	//start position update task
+	posUpdateTimer := time.NewTicker(time.Millisecond * 250)
+
+	go func() {
+		for {
+			select {
+			case <-posUpdateTimer.C:
+				sendPositionUpdateMessage()
+				break
+			}
+		}
+	}()
+}
+
+func sendPositionUpdateMessage() {
+	//generate the message
+	message, err := createPositionUpdateMessage()
+
+	if err != nil {
+		//perhaps the database has crashed...
+		fmt.Println(err)
+		return
+	}
+
+	//send it to all clients
+	hhserver.SendJSONAll(message)
 }
 
 func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {

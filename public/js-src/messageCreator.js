@@ -2,7 +2,8 @@ var messageTypeVal = 0
 var messageType = {
   newPlayerRequest      : messageTypeVal++,
 	newPlayerResponse     : messageTypeVal++,
-	positionUpdateRequest : messageTypeVal++
+  positionUpdateRequest : messageTypeVal++,
+  positionUpdateMessage : messageTypeVal++
 }
 
 function createNewPlayerRequest(nickname) {

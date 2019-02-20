@@ -33,6 +33,9 @@ function onWebsocketReceive(message) {
     case messageType.newPlayerResponse:
       onNewPlayerResponse(message.data)
       break;
+    case messageType.positionUpdateMessage:
+      onPositionUpdateMessage(message.data)
+      break;
     default:
       console.log("Unknown message received:" + message.type)
   }
@@ -48,6 +51,10 @@ function onNewPlayerResponse(message) {
   clientID = message.id
 
   //draw initial position, etc.
+}
+
+function onPositionUpdateMessage(message) {
+  console.log("Position update message: " + JSON.stringify(message))
 }
 
 //send a local position update event to the client
