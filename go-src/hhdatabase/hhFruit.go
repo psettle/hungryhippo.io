@@ -277,7 +277,7 @@ func (p *Fruit) Save() error {
 }
 
 //Delete removes a fruit entry from the database
-func (p *Fruit) Delete() error {
+func (p *Fruit) Delete() (bool, error) {
 	//local copy of a connection to the database
 	var conn *redis.Client
 
@@ -289,7 +289,7 @@ func (p *Fruit) Delete() error {
 		var err error
 		conn, err = beginOperation()
 		if err != nil {
-			return err
+			return false, err
 		}
 		defer endOperation(conn)
 	}
@@ -297,7 +297,7 @@ func (p *Fruit) Delete() error {
 	//start a transaction
 	response := conn.Cmd("MULTI")
 	if response.Err != nil {
-		return response.Err
+		return false, response.Err
 	}
 
 	id := p.ID.String()
@@ -306,31 +306,43 @@ func (p *Fruit) Delete() error {
 	response = conn.Cmd("SREM", "fruits", id)
 	if response.Err != nil {
 		conn.Cmd("DISCARD")
-		return response.Err
+		return false, response.Err
 	}
 
 	//delete the fruit entry
-	response = conn.Cmd("HREM", "fruit_data", p.listKeys())
+	response = conn.Cmd("HDEL", "fruit_data", p.listKeys())
 	if response.Err != nil {
 		conn.Cmd("DISCARD")
-		return response.Err
+		return false, response.Err
 	}
 
 	//delete the fruit watch, to prevent concurrent access
 	response = conn.Cmd("DEL", id)
 	if response.Err != nil {
 		conn.Cmd("DISCARD")
-		return response.Err
+		return false, response.Err
 	}
 
 	//commit the transaction
 	response = conn.Cmd("EXEC")
 	if response.Err != nil {
-		return response.Err
+		return false, response.Err
+	}
+
+	//check response to see if the keys were successfully deleted
+	responses, respErr := response.Array()
+	if respErr != nil {
+		return false, respErr
+	}
+
+	hdelCount, hdelErr := responses[1].Int()
+	if hdelErr != nil {
+		return false, respErr
 	}
 
 	//no errors
-	return nil
+	deleted := (hdelCount == len(p.listKeys()))
+	return deleted, nil
 }
 
 //Close frees resources associated with a fruit object

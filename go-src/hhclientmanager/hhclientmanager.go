@@ -78,6 +78,12 @@ func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	case positionUpdateRequest:
 		handlePositionUpdateRequest(clientID, message)
 		break
+	case consumeFruitRequest:
+		handleConsumeFruitRequest(clientID, message)
+		break
+	case consumePlayerRequest:
+		handleConsumePlayerRequest(clientID, message)
+		break
 	default:
 		fmt.Println("Unknown request type", requestType)
 	}
@@ -183,4 +189,55 @@ func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) 
 		fmt.Println(err)
 		return
 	}
+}
+
+func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
+	//which fruit is it?
+	idstr, idstrErr := message.Get("data").Get("id").String()
+	id, idErr := uuid.FromString(idstr)
+
+	//check for parsing errors, indicates invalid id
+	if idstrErr != nil {
+		fmt.Println(idstrErr)
+		return
+	}
+
+	if idErr != nil {
+		fmt.Println(idErr)
+		return
+	}
+
+	//load that fruit
+	fruit := hhdatabase.CreateFruit(&id)
+	err := fruit.Watch()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer fruit.Close()
+
+	exists, existsErr := fruit.Load()
+	if existsErr != nil {
+		fmt.Println(existsErr)
+		return
+	}
+
+	if !exists {
+		fmt.Println("Consumed fruit does not exist")
+		return
+	}
+
+	//fruit exists, try to delete it:
+	var consumed bool
+	consumed, err = fruit.Delete()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(consumed)
+}
+
+func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
+
 }

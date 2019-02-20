@@ -293,7 +293,8 @@ func (p *Player) Save() error {
 }
 
 //Delete removes a player entry from the database
-func (p *Player) Delete() error {
+//returns true if deleted, false otherwise
+func (p *Player) Delete() (bool, error) {
 	//local copy of a connection to the database
 	var conn *redis.Client
 
@@ -305,7 +306,7 @@ func (p *Player) Delete() error {
 		var err error
 		conn, err = beginOperation()
 		if err != nil {
-			return err
+			return false, err
 		}
 		defer endOperation(conn)
 	}
@@ -313,7 +314,7 @@ func (p *Player) Delete() error {
 	//start a transaction
 	response := conn.Cmd("MULTI")
 	if response.Err != nil {
-		return response.Err
+		return false, response.Err
 	}
 
 	id := p.ID.String()
@@ -322,31 +323,43 @@ func (p *Player) Delete() error {
 	response = conn.Cmd("SREM", "players", id)
 	if response.Err != nil {
 		conn.Cmd("DISCARD")
-		return response.Err
+		return false, response.Err
 	}
 
 	//delete the player entry
-	response = conn.Cmd("HREM", "player_data", p.listKeys())
+	response = conn.Cmd("HDEL", "player_data", p.listKeys())
 	if response.Err != nil {
 		conn.Cmd("DISCARD")
-		return response.Err
+		return false, response.Err
 	}
 
 	//delete the player watch, to prevent concurrent access
 	response = conn.Cmd("DEL", id)
 	if response.Err != nil {
 		conn.Cmd("DISCARD")
-		return response.Err
+		return false, response.Err
 	}
 
 	//commit the transaction
 	response = conn.Cmd("EXEC")
 	if response.Err != nil {
-		return response.Err
+		return false, response.Err
+	}
+
+	//check response to see if the keys were successfully deleted
+	responses, respErr := response.Array()
+	if respErr != nil {
+		return false, respErr
+	}
+
+	hdelCount, hdelErr := responses[1].Int()
+	if hdelErr != nil {
+		return false, respErr
 	}
 
 	//no errors
-	return nil
+	deleted := (hdelCount == len(p.listKeys()))
+	return deleted, nil
 }
 
 //Close frees resources associated with a player object
