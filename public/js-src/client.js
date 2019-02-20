@@ -30,7 +30,7 @@ function onWebsocketReceive(message) {
   
   //decode message type
   switch(message.type) {
-    case "NewPlayerResponse":
+    case messageType.newPlayerResponse:
       onNewPlayerResponse(message.data)
       break;
     default:

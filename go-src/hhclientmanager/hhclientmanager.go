@@ -36,7 +36,7 @@ func HandleClients() {
 
 func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	//identify type of request
-	requestType, err := message.Get("type").String()
+	requestType, err := message.Get("type").Int()
 
 	if err != nil {
 		fmt.Println("Invalid request received.", err)
@@ -44,10 +44,10 @@ func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	}
 
 	switch requestType {
-	case "NewPlayerRequest":
+	case newPlayerRequest:
 		handleNewPlayerRequest(clientID, message)
 		break
-	case "PositionUpdateRequest":
+	case positionUpdateRequest:
 		handlePositionUpdateRequest(clientID, message)
 		break
 	default:

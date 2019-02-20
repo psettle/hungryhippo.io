@@ -1,7 +1,14 @@
+var messageTypeVal = 0
+var messageType = {
+  newPlayerRequest      : messageTypeVal++,
+	newPlayerResponse     : messageTypeVal++,
+	positionUpdateRequest : messageTypeVal++
+}
+
 function createNewPlayerRequest(nickname) {
   return JSON.stringify(
     { 
-      type: "NewPlayerRequest",
+      type: messageType.newPlayerRequest,
       data: {
         "nickname" : nickname
       }
@@ -44,7 +51,7 @@ function validateNewPlayerResponse(message) {
 function createPositionUpdateMessage(clientID, newX, newY, newDirection) {
   return JSON.stringify(
     {
-      type: "PositionUpdateRequest",
+      type: messageType.positionUpdateRequest,
       data: {
         id: clientID,
         location: {

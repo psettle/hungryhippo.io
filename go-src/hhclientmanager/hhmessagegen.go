@@ -8,9 +8,15 @@ import (
 	"github.com/bitly/go-simplejson"
 )
 
+const (
+	newPlayerRequest      = iota
+	newPlayerResponse     = iota
+	positionUpdateRequest = iota
+)
+
 func createNewPlayerResponse(player *hhdatabase.Player) (*simplejson.Json, error) {
 	return simplejson.NewJson([]byte(`{
-		"type" : "NewPlayerResponse",
+		"type" : ` + fmt.Sprintf("%d", newPlayerResponse) + `,
 		"data" : {
 			"id" : "` + player.ID.String() + `",
 			"points" : 0,
