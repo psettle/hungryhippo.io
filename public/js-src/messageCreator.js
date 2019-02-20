@@ -7,7 +7,7 @@ var messageType = {
   positionUpdateMessage : messageTypeVal++, //Server tells player about the position of all players
 
   consumeFruitRequest  : messageTypeVal++, //A player asks to consume an existing fruit
-	consumeFruitResponse : messageTypeVal++, //server accepts/denies consumption request
+	consumeFruitMessage  : messageTypeVal++, //server notifies clients that a fruit has died
 	newFruitMessage      : messageTypeVal++, //the server has generated a new fruit
 
 	consumePlayerRequest  : messageTypeVal++, //a player asks to consume another player
@@ -71,6 +71,18 @@ function createPositionUpdateMessage(clientID, newX, newY, newDirection) {
           },
           direction: newDirection
         },
+      }
+    }
+  )
+}
+
+function createFruitConsumptionRequest(clientID, fruitID) {
+  return JSON.stringify(
+    {
+      type: messageType.consumeFruitRequest,
+      data: {
+        client_id: clientID,
+        fruit_id: fruitID
       }
     }
   )

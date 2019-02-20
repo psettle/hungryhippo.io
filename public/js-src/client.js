@@ -36,6 +36,12 @@ function onWebsocketReceive(message) {
     case messageType.positionUpdateMessage:
       onPositionUpdateMessage(message.data)
       break;
+    case messageType.consumeFruitMessage:
+      onConsumeFruitMessage(message.data)
+      break;
+    case messageType.newFruitMessage:
+      onNewFruitMessage(message.data)
+      break
     default:
       console.log("Unknown message received:" + message.type)
   }
@@ -57,7 +63,15 @@ function onPositionUpdateMessage(message) {
   console.log("Position update message: " + JSON.stringify(message))
 }
 
-//send a local position update event to the client
+function onConsumeFruitMessage(message) {
+  console.log("Fruit Consumed: " + JSON.stringify(message))
+}
+
+function onNewFruitMessage(message) {
+  console.log("New Fruit: " + JSON.stringify(message))
+}
+
+//send a local position update event to the server
 function sendPositionUpdateMessage(newX, newY, newDirection) {
   if(clientID == null)
   {
@@ -66,5 +80,17 @@ function sendPositionUpdateMessage(newX, newY, newDirection) {
   }
 
   message = createPositionUpdateMessage(clientID, newX, newY, newDirection)
+  ws.send(message)
+}
+
+//send a request to consume a fruit to the server
+function sendFruitConsumptionRequest(fruitID) {
+  if(clientID == null)
+  {
+    console.log("Fruit consume without ID")
+    return
+  }
+
+  message = createFruitConsumptionRequest(clientID, fruitID)
   ws.send(message)
 }

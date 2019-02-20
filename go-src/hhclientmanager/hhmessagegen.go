@@ -8,6 +8,7 @@ import (
 	"hungryhippo.io/go-src/hhdatabase"
 
 	"github.com/bitly/go-simplejson"
+	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -17,9 +18,9 @@ const (
 	positionUpdateRequest = iota //A player asks to be moved to a new location
 	positionUpdateMessage = iota //Server tells player about the position of all players
 
-	consumeFruitRequest  = iota //A player asks to consume an existing fruit
-	consumeFruitResponse = iota //server accepts/denies consumption request
-	newFruitMessage      = iota //the server has generated a new fruit
+	consumeFruitRequest = iota //A player asks to consume an existing fruit
+	consumeFruitMessage = iota //server notifies clients that a fruit has died
+	newFruitMessage     = iota //the server has generated a new fruit
 
 	consumePlayerRequest  = iota //a player asks to consume another player
 	consumePlayerResponse = iota //the server accepts/denies the consumption request
@@ -75,6 +76,29 @@ func createPositionUpdateMessage() (*simplejson.Json, error) {
 	message.Get("data").Set("players", playerEntries)
 
 	return message, nil
+}
+
+func createFruitConsumptionMessage(playerid *uuid.UUID, fruitid *uuid.UUID) (*simplejson.Json, error) {
+	return simplejson.NewJson([]byte(`{
+		"type" : ` + fmt.Sprintf("%d", consumeFruitMessage) + `,
+		"data" : {
+			"consumer_id" : "` + playerid.String() + `",
+			"consumed_id" : "` + fruitid.String() + `"
+		}
+	}`))
+}
+
+func createNewFruitMessage(fruit *hhdatabase.Fruit) (*simplejson.Json, error) {
+	return simplejson.NewJson([]byte(`{
+		"type" : ` + fmt.Sprintf("%d", newFruitMessage) + `,
+		"data" : {
+			"id" : "` + fruit.ID.String() + `",
+			"position": {
+				"x": ` + fmt.Sprintf("%f", fruit.Position.X) + `,
+				"y": ` + fmt.Sprintf("%f", fruit.Position.Y) + `
+			},
+		}
+	}`))
 }
 
 func playerToSimplejson(player *hhdatabase.Player) *simplejson.Json {

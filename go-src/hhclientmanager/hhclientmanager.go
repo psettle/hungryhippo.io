@@ -2,6 +2,7 @@ package hhclientmanager
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"time"
@@ -193,7 +194,7 @@ func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) 
 
 func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	//which fruit is it?
-	idstr, idstrErr := message.Get("data").Get("id").String()
+	idstr, idstrErr := message.Get("data").Get("fruit_id").String()
 	id, idErr := uuid.FromString(idstr)
 
 	//check for parsing errors, indicates invalid id
@@ -207,7 +208,7 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 		return
 	}
 
-	//load that fruit
+	//delete that fruit
 	fruit := hhdatabase.CreateFruit(&id)
 	err := fruit.Watch()
 	if err != nil {
@@ -216,18 +217,7 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	}
 	defer fruit.Close()
 
-	exists, existsErr := fruit.Load()
-	if existsErr != nil {
-		fmt.Println(existsErr)
-		return
-	}
-
-	if !exists {
-		fmt.Println("Consumed fruit does not exist")
-		return
-	}
-
-	//fruit exists, try to delete it:
+	//try to delete it:
 	var consumed bool
 	consumed, err = fruit.Delete()
 	if err != nil {
@@ -235,7 +225,38 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 		return
 	}
 
-	fmt.Println(consumed)
+	if !consumed {
+		/* If this failed then the fruit has already been consumed, eat the message. */
+		return
+	}
+
+	//the fruit was consumed, tell all the clients that it is gone.
+	fruitConsumedMessage, respErr := createFruitConsumptionMessage(clientID, &id)
+	if respErr != nil {
+		fmt.Println(respErr)
+		return
+	}
+
+	hhserver.SendJSONAll(fruitConsumedMessage)
+
+	//generate a new fruit
+	newFruitUUID := uuid.Must(uuid.NewV4())
+	newFruit := hhdatabase.CreateFruit(&newFruitUUID)
+	newFruit.Position.X = rand.Float64() * xBoardWidth
+	newFruit.Position.Y = rand.Float64() * yBoardWidth
+	err = newFruit.Save()
+
+	if err != nil {
+		log.Panic("Unique fruit could not be saved.")
+	}
+
+	newFruitMessage, mesgErr := createNewFruitMessage(newFruit)
+	if mesgErr != nil {
+		fmt.Println(mesgErr)
+		return
+	}
+
+	hhserver.SendJSONAll(newFruitMessage)
 }
 
 func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
