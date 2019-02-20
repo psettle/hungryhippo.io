@@ -3,22 +3,23 @@ package hhclientmanager
 import (
 	"fmt"
 
+	"hungryhippo.io/go-src/hhdatabase"
+
 	"github.com/bitly/go-simplejson"
-	uuid "github.com/satori/go.uuid"
 )
 
-func createNewPlayerResponse(clientID *uuid.UUID, xpos float64, ypos float64, direction float64) (*simplejson.Json, error) {
+func createNewPlayerResponse(player *hhdatabase.Player) (*simplejson.Json, error) {
 	return simplejson.NewJson([]byte(`{
 		"type" : "NewPlayerResponse",
 		"data" : {
-			"id" : "` + clientID.String() + `",
+			"id" : "` + player.ID.String() + `",
 			"points" : 0,
 			"location" : {
 				"centre": {
-					"x": ` + fmt.Sprintf("%f", xpos) + `,
-					"y": ` + fmt.Sprintf("%f", ypos) + `
+					"x": ` + fmt.Sprintf("%f", player.Location.Centre.X) + `,
+					"y": ` + fmt.Sprintf("%f", player.Location.Centre.Y) + `
 				},
-				"direction": ` + fmt.Sprintf("%f", direction) + `
+				"direction": ` + fmt.Sprintf("%f", player.Location.Direction) + `
 			}
 		}
 	}`))
