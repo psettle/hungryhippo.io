@@ -2,8 +2,10 @@ package hhclientmanager
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/bitly/go-simplejson"
 	uuid "github.com/satori/go.uuid"
@@ -32,6 +34,33 @@ func HandleClients() {
 			}
 		}
 	}()
+
+	//start position update task
+	posUpdateTimer := time.NewTicker(time.Millisecond * 250)
+
+	go func() {
+		for {
+			select {
+			case <-posUpdateTimer.C:
+				sendPositionUpdateMessage()
+				break
+			}
+		}
+	}()
+}
+
+func sendPositionUpdateMessage() {
+	//generate the message
+	message, err := createPositionUpdateMessage()
+
+	if err != nil {
+		//perhaps the database has crashed...
+		fmt.Println(err)
+		return
+	}
+
+	//send it to all clients
+	hhserver.SendJSONAll(message)
 }
 
 func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
@@ -49,6 +78,12 @@ func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
 		break
 	case positionUpdateRequest:
 		handlePositionUpdateRequest(clientID, message)
+		break
+	case consumeFruitRequest:
+		handleConsumeFruitRequest(clientID, message)
+		break
+	case consumePlayerRequest:
+		handleConsumePlayerRequest(clientID, message)
 		break
 	default:
 		fmt.Println("Unknown request type", requestType)
@@ -155,4 +190,75 @@ func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) 
 		fmt.Println(err)
 		return
 	}
+}
+
+func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
+	//which fruit is it?
+	idstr, idstrErr := message.Get("data").Get("fruit_id").String()
+	id, idErr := uuid.FromString(idstr)
+
+	//check for parsing errors, indicates invalid id
+	if idstrErr != nil {
+		fmt.Println(idstrErr)
+		return
+	}
+
+	if idErr != nil {
+		fmt.Println(idErr)
+		return
+	}
+
+	//delete that fruit
+	fruit := hhdatabase.CreateFruit(&id)
+	err := fruit.Watch()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer fruit.Close()
+
+	//try to delete it:
+	var consumed bool
+	consumed, err = fruit.Delete()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if !consumed {
+		/* If this failed then the fruit has already been consumed, eat the message. */
+		return
+	}
+
+	//the fruit was consumed, tell all the clients that it is gone.
+	fruitConsumedMessage, respErr := createFruitConsumptionMessage(clientID, &id)
+	if respErr != nil {
+		fmt.Println(respErr)
+		return
+	}
+
+	hhserver.SendJSONAll(fruitConsumedMessage)
+
+	//generate a new fruit
+	newFruitUUID := uuid.Must(uuid.NewV4())
+	newFruit := hhdatabase.CreateFruit(&newFruitUUID)
+	newFruit.Position.X = rand.Float64() * xBoardWidth
+	newFruit.Position.Y = rand.Float64() * yBoardWidth
+	err = newFruit.Save()
+
+	if err != nil {
+		log.Panic("Unique fruit could not be saved.")
+	}
+
+	newFruitMessage, mesgErr := createNewFruitMessage(newFruit)
+	if mesgErr != nil {
+		fmt.Println(mesgErr)
+		return
+	}
+
+	hhserver.SendJSONAll(newFruitMessage)
+}
+
+func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
+
 }
