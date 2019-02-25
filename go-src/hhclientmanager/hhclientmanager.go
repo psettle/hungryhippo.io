@@ -101,32 +101,70 @@ func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
 
 	player := hhdatabase.CreatePlayer(clientID)
 
-	var exists bool
-	exists, err = player.Load()
+	//we need to save the player, so begin an operation
+	conn, connErr := hhdatabase.BeginOperation()
+	if err != nil {
+		fmt.Println(connErr)
+		return
+	}
+	defer hhdatabase.EndOperation(conn)
+
+	//put a watch on the player to avoid conflicts
+	err = hhdatabase.Watch(player, conn)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
+	//load the player to check if it exists already
+	var exists bool
+	var item hhdatabase.Item
+	item, exists, err = hhdatabase.Load(player, conn)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	if exists {
 		fmt.Println("Rejoin by existing player")
 		return
 	}
 
+	//populate the data since the player doesn't exist
 	player.Location.Centre.X = rand.Float64() * xBoardWidth
 	player.Location.Centre.Y = rand.Float64() * yBoardWidth
 	player.Location.Direction = rand.Float64() * maxDirection
 	player.Name = nickname
 	player.Score = 0
 
-	//under the assumption that UUIDs are unique, there can be no conflict on save, so no need to retry or return a fail message
-	//TODO: (technically there could be conflict if one client sent a new player request twice quickly)
-	err = player.Save()
+	//start a transaction to prepare for a save
+	err = hhdatabase.Multi(conn)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
+	//queue the save operation
+	err = hhdatabase.Save(player, conn)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//execute the queued operation
+	var applied bool
+	applied, err = hhdatabase.Exec(conn)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//under the assumption that UUIDs are unique, the only way for a conflict is if the player was added since the watch
+	//in that case it exists already, so no need to retry.
+	if !applied {
+		return
+	}
+
+	//successfully created the player, so respond now
 	response, err := createNewPlayerResponse(player)
 	if err != nil {
 		fmt.Println(err)
@@ -260,5 +298,52 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 }
 
 func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
+	//parse out player ids
+	consumerStr, consumerStrErr := message.Get("data").Get("consumer_id").String()
+	consumer, consumerErr := uuid.FromString(consumerStr)
+
+	consumedStr, consumedStrErr := message.Get("data").Get("consumed_id").String()
+	consumed, consumedErr := uuid.FromString(consumedStr)
+
+	switch {
+	case consumerStrErr != nil:
+		fmt.Println(consumerStrErr)
+		return
+	case consumerErr != nil:
+		fmt.Println(consumerErr)
+		return
+	case consumedStrErr != nil:
+		fmt.Println(consumedStrErr)
+		return
+	case consumedErr != nil:
+		fmt.Println(consumedErr)
+		return
+	default:
+		break
+	}
+
+	//set watch to avoid conflicts
+	conn, watchErr := hhdatabase.WatchPlayers([]*uuid.UUID{&consumer, &consumed})
+	if watchErr != nil {
+		fmt.Println(watchErr)
+		return
+	}
+	defer hhdatabase.UnWatchPlayers(conn)
+
+	//load the relevant players
+	players, exists, loadErr := hhdatabase.LoadPlayers([]*uuid.UUID{&consumer, &consumed}, conn)
+	if loadErr != nil {
+		fmt.Println(loadErr)
+		return
+	}
+
+	if !exists[0] || !exists[1] {
+		fmt.Println("Consume request on invalid players")
+		return
+	}
+	consumedPlayer = players[0]
+	consumedPlayer = players[1]
+
+	//if both players exist, try update the score on the consumer
 
 }

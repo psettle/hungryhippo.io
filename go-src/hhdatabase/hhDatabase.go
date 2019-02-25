@@ -23,11 +23,34 @@ func init() {
 }
 
 //BeginOperation allocates a database connection for executing transactions
-func beginOperation() (*redis.Client, error) {
+func BeginOperation() (*redis.Client, error) {
 	return database.Get()
 }
 
+//Multi starts a transaction on the provided connection
+func Multi(conn *redis.Client) error {
+	return conn.Cmd("MULTI").Err
+}
+
+//Exec executes a transaction on the provided connection
+//returns true if the transaction was applied, false if it failed due to watches
+func Exec(conn *redis.Client) (bool, error) {
+	response := conn.Cmd("EXEC")
+
+	if response.Err != nil {
+		return false, response.Err
+	}
+
+	/* Transaction didn't 'fail' but it might still have a null response
+	   indicating that it wasn't applied due to conflict */
+	if response.IsType(redis.Nil) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 //EndOperation returns an allocated database connection
-func endOperation(conn *redis.Client) {
+func EndOperation(conn *redis.Client) {
 	database.Put(conn)
 }
