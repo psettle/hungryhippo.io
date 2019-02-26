@@ -45,7 +45,13 @@ func createNewPlayerResponse(player *hhdatabase.Player) (*simplejson.Json, error
 }
 
 func createPositionUpdateMessage() (*simplejson.Json, error) {
-	players, exists, err := hhdatabase.LoadPlayers(nil, nil)
+	conn, connErr := hhdatabase.BeginOperation()
+	if connErr != nil {
+		return nil, connErr
+	}
+	defer hhdatabase.EndOperation(conn)
+
+	players, exists, err := hhdatabase.LoadMany(hhdatabase.Player{}, nil, conn)
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +71,12 @@ func createPositionUpdateMessage() (*simplejson.Json, error) {
 	var playerEntries []*simplejson.Json
 
 	for i := range players {
-		player := players[i]
+		item := *players[i]
+		player := item.(hhdatabase.Player)
 		exist := exists[i]
 
 		if exist {
-			playerEntries = append(playerEntries, playerToSimplejson(player))
+			playerEntries = append(playerEntries, playerToSimplejson(&player))
 		}
 	}
 
@@ -97,6 +104,25 @@ func createNewFruitMessage(fruit *hhdatabase.Fruit) (*simplejson.Json, error) {
 				"x": ` + fmt.Sprintf("%f", fruit.Position.X) + `,
 				"y": ` + fmt.Sprintf("%f", fruit.Position.Y) + `
 			},
+		}
+	}`))
+}
+
+func createConsumePlayerResponse(playerid *uuid.UUID, score int) (*simplejson.Json, error) {
+	return simplejson.NewJson([]byte(`{
+		"type" : ` + fmt.Sprintf("%d", consumePlayerResponse) + `,
+		"data" : {
+			"id" : "` + playerid.String() + `",
+			"points":` + strconv.Itoa(score) + `,
+		}
+	}`))
+}
+
+func createPlayerDeathMessage(playerid *uuid.UUID) (*simplejson.Json, error) {
+	return simplejson.NewJson([]byte(`{
+		"type" : ` + fmt.Sprintf("%d", playerDeathMessage) + `,
+		"data" : {
+			"id" : "` + playerid.String() + `"
 		}
 	}`))
 }

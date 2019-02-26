@@ -14,12 +14,6 @@ $(document).ready(function() {
   })
 })
 
-//generates and sends a request to join the game to the server
-function sendNewPlayerRequest(nickname) {
-  var message = createNewPlayerRequest(nickname)
-  ws.send(message)
-}
-
 //callback for messages from the server
 function onWebsocketReceive(message) {
   //check for top level validity
@@ -41,22 +35,23 @@ function onWebsocketReceive(message) {
       break;
     case messageType.newFruitMessage:
       onNewFruitMessage(message.data)
-      break
+      break;
+    case messageType.consumePlayerResponse:
+      onConsumePlayerResponse(message.data)
+      break;
+    case messageType.playerDeathMessage:
+      onPlayerDeathMessage(message.data)
+      break;
     default:
       console.log("Unknown message received:" + message.type)
   }
 }
 
 function onNewPlayerResponse(message) {
-  //validate message integrety
-  if(!validateNewPlayerResponse(message)) {
-    console.log("Invlaid NewPlayerResponse message received" + JSON.stringify(message))
-    return
-  }
-
   clientID = message.id
 
   //draw initial position, etc.
+  console.log("New Player: " + JSON.stringify(message))
 }
 
 function onPositionUpdateMessage(message) {
@@ -69,6 +64,22 @@ function onConsumeFruitMessage(message) {
 
 function onNewFruitMessage(message) {
   console.log("New Fruit: " + JSON.stringify(message))
+}
+
+function onConsumePlayerResponse(message) {
+  console.log("player consumed: " + JSON.stringify(message))
+}
+
+function onPlayerDeathMessage(message) {
+  console.log("Player death: " + JSON.stringify(message))
+}
+
+
+
+//generates and sends a request to join the game to the server
+function sendNewPlayerRequest(nickname) {
+  var message = createNewPlayerRequest(nickname)
+  ws.send(message)
 }
 
 //send a local position update event to the server
@@ -92,5 +103,17 @@ function sendFruitConsumptionRequest(fruitID) {
   }
 
   message = createFruitConsumptionRequest(clientID, fruitID)
+  ws.send(message)
+}
+
+//send a request to consume a player to the server
+function sendPlayerConsumptionRequest(consumedID) {
+  if(clientID == null)
+  {
+    console.log("Player consume without ID")
+    return
+  }
+
+  message = createPlayerConsumptionRequest(clientID, consumedID)
   ws.send(message)
 }

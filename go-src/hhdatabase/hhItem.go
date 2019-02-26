@@ -43,11 +43,7 @@ func Watch(i Item, conn *redis.Client) error {
 
 //Load gets a single item from the database, returns true if the entry existed, false on not exists or error
 func Load(i Item, conn *redis.Client) (Item, bool, error) {
-	var connI interface {
-		Cmd(cmd string, args ...interface{}) *redis.Resp
-	}
-
-	reply, err := connI.Cmd("HMGET", i.getValueKey(), i.listKeys()).List()
+	reply, err := conn.Cmd("HMGET", i.getValueKey(), i.listKeys()).List()
 	if err != nil {
 		return i, false, err
 	}
@@ -214,23 +210,21 @@ func Save(i Item, conn *redis.Client) error {
 //Note: should be used with watches/transactions, which are managed seperately on the provided conn
 //Note: error = nil does NOT imply successful deletion, the item may have already been deleted
 //  	to check if an item was deleted, watch the item, load it to confirm it exists, then delete in a transaction
-func Delete(i *Item, conn *redis.Client) error {
-	item := *i
-
+func Delete(i Item, conn *redis.Client) error {
 	//remove the item from the set of items
-	response := conn.Cmd("SREM", item.getMembersKey(), item.getWatchKey())
+	response := conn.Cmd("SREM", i.getMembersKey(), i.getWatchKey())
 	if response.Err != nil {
 		return response.Err
 	}
 
 	//delete the item entry
-	response = conn.Cmd("HDEL", item.getValueKey(), item.listKeys())
+	response = conn.Cmd("HDEL", i.getValueKey(), i.listKeys())
 	if response.Err != nil {
 		return response.Err
 	}
 
 	//delete the item watch, to prevent concurrent access
-	response = conn.Cmd("DEL", item.getWatchKey())
+	response = conn.Cmd("DEL", i.getWatchKey())
 	if response.Err != nil {
 		return response.Err
 	}

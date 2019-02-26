@@ -26,38 +26,6 @@ function createNewPlayerRequest(nickname) {
   )
 }
 
-function validateNewPlayerResponse(message) {
-  if(!('id' in message)) {
-    return false
-  }
-
-  if(!('location' in message)) {
-    return false
-  }
-
-  if(!('direction' in message.location)) {
-    return false
-  }
-
-  if(!('centre' in message.location)) {
-    return false
-  }
-
-  if(!('x' in message.location.centre)) {
-    return false
-  }
-
-  if(!('y' in message.location.centre)) {
-    return false
-  }
-
-  if(!('points' in message)) {
-    return false
-  }
-
-  return true
-}
-
 function createPositionUpdateMessage(clientID, newX, newY, newDirection) {
   return JSON.stringify(
     {
@@ -83,6 +51,18 @@ function createFruitConsumptionRequest(clientID, fruitID) {
       data: {
         client_id: clientID,
         fruit_id: fruitID
+      }
+    }
+  )
+}
+
+function createPlayerConsumptionRequest(consumerID, consumedID) {
+  return JSON.stringify(
+    {
+      type: messageType.consumePlayerRequest,
+      data: {
+        consumer_id: consumerID,
+        consumed_id: consumedID
       }
     }
   )
