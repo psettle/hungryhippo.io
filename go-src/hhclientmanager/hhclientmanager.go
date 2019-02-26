@@ -2,8 +2,6 @@ package hhclientmanager
 
 import (
 	"fmt"
-	"log"
-	"math"
 	"math/rand"
 	"time"
 
@@ -12,10 +10,6 @@ import (
 	"hungryhippo.io/go-src/hhdatabase"
 	"hungryhippo.io/go-src/hhserver"
 )
-
-const xBoardWidth = 1000.0
-const yBoardWidth = 1000.0
-const maxDirection = math.Pi * 2
 
 //HandleClients registers for websocket requests then accepts and responds to requests
 func HandleClients() {
@@ -99,34 +93,27 @@ func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
 		return
 	}
 
+	//Create the player
 	player := hhdatabase.CreatePlayer(clientID)
-
-	var exists bool
-	exists, err = player.Load()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if exists {
-		fmt.Println("Rejoin by existing player")
-		return
-	}
-
+	player.Name = nickname
 	player.Location.Centre.X = rand.Float64() * xBoardWidth
 	player.Location.Centre.Y = rand.Float64() * yBoardWidth
 	player.Location.Direction = rand.Float64() * maxDirection
-	player.Name = nickname
 	player.Score = 0
 
-	//under the assumption that UUIDs are unique, there can be no conflict on save, so no need to retry or return a fail message
-	//TODO: (technically there could be conflict if one client sent a new player request twice quickly)
-	err = player.Save()
+	var applied bool
+	applied, err = createNewPlayer(player)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
+	if !applied {
+		//if player was not created, do not return the new player response
+		return
+	}
+
+	//successfully created the player, so respond now
 	response, err := createNewPlayerResponse(player)
 	if err != nil {
 		fmt.Println(err)
@@ -137,8 +124,8 @@ func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
 }
 
 func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) {
+	//parse data
 	location := message.Get("data").Get("location")
-
 	newX, errX := location.Get("centre").Get("x").Float64()
 	newY, errY := location.Get("centre").Get("y").Float64()
 	newDirection, errDirection := location.Get("direction").Float64()
@@ -157,35 +144,8 @@ func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) 
 		break
 	}
 
-	//load the associated player
-	player := hhdatabase.CreatePlayer(clientID)
-	err := player.Watch()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	//need to defer a close call since watch player was called
-	defer player.Close()
-
-	exists, errExists := player.Load()
-	if errExists != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if !exists {
-		fmt.Println("handlePositionUpdateRequest: Unknown player")
-		return
-	}
-
-	//TODO: validate that movement was legal... (player didn't collide/get collided with)
-
-	//save the new player position
-	//TODO: this could fail if a collision happened between the .WatchPlayer call and the .Save call, the .Save call will fail in that case.
-	player.Location.Centre.X = newX
-	player.Location.Centre.Y = newY
-	player.Location.Direction = newDirection
-	err = player.Save()
+	//apply update
+	_, err := updatePlayerPosition(hhdatabase.CreatePlayer(clientID), newX, newY, newDirection)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -208,25 +168,24 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 		return
 	}
 
-	//delete that fruit
 	fruit := hhdatabase.CreateFruit(&id)
-	err := fruit.Watch()
+	player := hhdatabase.CreatePlayer(clientID)
+
+	//prepare a replacement fruit
+	newFruitUUID := uuid.Must(uuid.NewV4())
+	newFruit := hhdatabase.CreateFruit(&newFruitUUID)
+	newFruit.Position.X = rand.Float64() * xBoardWidth
+	newFruit.Position.Y = rand.Float64() * yBoardWidth
+
+	//consume the fruit
+	applied, err := consumeFruit(player, fruit, newFruit)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	defer fruit.Close()
 
-	//try to delete it:
-	var consumed bool
-	consumed, err = fruit.Delete()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if !consumed {
-		/* If this failed then the fruit has already been consumed, eat the message. */
+	if !applied {
+		//opertion was invalid, don't proceed
 		return
 	}
 
@@ -239,17 +198,7 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 
 	hhserver.SendJSONAll(fruitConsumedMessage)
 
-	//generate a new fruit
-	newFruitUUID := uuid.Must(uuid.NewV4())
-	newFruit := hhdatabase.CreateFruit(&newFruitUUID)
-	newFruit.Position.X = rand.Float64() * xBoardWidth
-	newFruit.Position.Y = rand.Float64() * yBoardWidth
-	err = newFruit.Save()
-
-	if err != nil {
-		log.Panic("Unique fruit could not be saved.")
-	}
-
+	//and tell them about the new fruit
 	newFruitMessage, mesgErr := createNewFruitMessage(newFruit)
 	if mesgErr != nil {
 		fmt.Println(mesgErr)
@@ -260,5 +209,60 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 }
 
 func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
+	//parse out player ids
+	consumerStr, consumerStrErr := message.Get("data").Get("consumer_id").String()
+	consumerID, consumerErr := uuid.FromString(consumerStr)
 
+	consumedStr, consumedStrErr := message.Get("data").Get("consumed_id").String()
+	consumedID, consumedErr := uuid.FromString(consumedStr)
+
+	switch {
+	case consumerStrErr != nil:
+		fmt.Println(consumerStrErr)
+		return
+	case consumerErr != nil:
+		fmt.Println(consumerErr)
+		return
+	case consumedStrErr != nil:
+		fmt.Println(consumedStrErr)
+		return
+	case consumedErr != nil:
+		fmt.Println(consumedErr)
+		return
+	default:
+		break
+	}
+
+	consumer := hhdatabase.CreatePlayer(&consumerID)
+	consumed := hhdatabase.CreatePlayer(&consumedID)
+
+	//apply consumption
+	applied, err := consumePlayer(consumer, consumed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if !applied {
+		//the operation was invalid
+		return
+	}
+
+	//tell the consumer that they have grown
+	playerConsumptionMessage, respErr := createConsumePlayerResponse(&consumer.ID, consumer.Score)
+	if respErr != nil {
+		fmt.Println(respErr)
+		return
+	}
+
+	hhserver.SendJSON(&consumer.ID, playerConsumptionMessage)
+
+	//tell the consumed that they died
+	playerDeathMessage, mesgErr := createPlayerDeathMessage(&consumed.ID)
+	if mesgErr != nil {
+		fmt.Println(mesgErr)
+		return
+	}
+
+	hhserver.SendJSON(&consumed.ID, playerDeathMessage)
 }
