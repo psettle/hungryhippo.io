@@ -8,31 +8,14 @@
     <script src="/js/client.js"></script>
     <script src="/js/movement.js"></script>
     <script src="/js/messageCreator.js"></script>
+    <script src="/js/businessLogic.js"></script>
     <style>* {padding: 0; margin: 0}</style>
   </head>
   <body>
     <h1>WebSocket Example</h1>
     <p>Open your browser's developer tools to see client/server activity.</p>
-    <input type="text" name="nickname"/><br><br>
-    <script>  
-      let app = new PIXI.Application({width: 500, height: 500});
-      app.renderer.backgroundColor = 0x061639;
-      app.renderer.view.style.position = "absolute";
-      app.renderer.view.style.display = "block";
-      app.renderer.autoDensity = true;
-      app.renderer.resize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(app.view);
-
-      var watermelon = PIXI.Sprite.from("js/images/watermelon.png");
-      var watermelon2 = PIXI.Sprite.from("js/images/watermelon.png");
-
-      watermelon.scale.set(0.05, 0.05);
-      watermelon2.scale.set(0.05, 0.05);
-
-      watermelon2.position.set(app.screen.width / 2, app.screen.height / 2);
-
-      app.stage.addChild(watermelon);
-      app.stage.addChild(watermelon2);
-    </script>
+    <input type="text" name="nickname"/>
+    <br>
+    <br>
   </body>
 </html>
