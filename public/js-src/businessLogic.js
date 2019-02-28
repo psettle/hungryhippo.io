@@ -7,20 +7,6 @@ $(document).ready( function() {
     app.renderer.resize(window.innerWidth, window.innerHeight);
     document.body.appendChild(app.view);
 
-    var fruit1 = drawFruit(app.screen.width / 2, app.screen.height / 2);
-    var fruit2 = drawFruit(10, 10);
-
-    function drawFruit(x, y)
-    {
-        var watermelon = PIXI.Sprite.from("js/images/watermelon.png");
-        watermelon.scale.set(0.05, 0.05);
-        watermelon.position.set(x, y);
-        app.stage.addChild(watermelon);
-        return watermelon;
-    }
-
-    function eraseFruit(fruit)
-    {
-        app.stage.removeChild(fruit);
-    }
+    var fruit1 = drawFruit(app, app.screen.width / 2, app.screen.height / 2, 0.05);
+    var fruit2 = drawFruit(app, 10, 10, 0.25);
 });
