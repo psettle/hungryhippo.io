@@ -29,23 +29,23 @@ func HandleClients() {
 		}
 	}()
 
-	//start position update task
-	posUpdateTimer := time.NewTicker(time.Millisecond * 250)
+	//start game update task
+	gameUpdateTimer := time.NewTicker(time.Millisecond * 250)
 
 	go func() {
 		for {
 			select {
-			case <-posUpdateTimer.C:
-				sendPositionUpdateMessage()
+			case <-gameUpdateTimer.C:
+				sendGamestateUpdateMessage()
 				break
 			}
 		}
 	}()
 }
 
-func sendPositionUpdateMessage() {
+func sendGamestateUpdateMessage() {
 	//generate the message
-	message, err := createPositionUpdateMessage()
+	message, err := createGamestateUpdateMessage()
 
 	if err != nil {
 		//perhaps the database has crashed...
@@ -58,6 +58,15 @@ func sendPositionUpdateMessage() {
 }
 
 func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
+	//a nil message indicates an abrupt client disconnect
+	if message == nil {
+		err := handleClientDisconnect(clientID)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return
+	}
+
 	//identify type of request
 	requestType, err := message.Get("type").Int()
 
@@ -68,29 +77,39 @@ func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
 
 	switch requestType {
 	case newPlayerRequest:
-		handleNewPlayerRequest(clientID, message)
+		err = handleNewPlayerRequest(clientID, message)
 		break
 	case positionUpdateRequest:
-		handlePositionUpdateRequest(clientID, message)
+		err = handlePositionUpdateRequest(clientID, message)
 		break
 	case consumeFruitRequest:
-		handleConsumeFruitRequest(clientID, message)
+		err = handleConsumeFruitRequest(clientID, message)
 		break
 	case consumePlayerRequest:
-		handleConsumePlayerRequest(clientID, message)
+		err = handleConsumePlayerRequest(clientID, message)
 		break
 	default:
 		fmt.Println("Unknown request type", requestType)
 	}
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
-func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
+func handleClientDisconnect(clientID *uuid.UUID) error {
+	player := hhdatabase.CreatePlayer(clientID)
+	_, err := deletePlayer(player)
+	return err
+}
+
+func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) error {
 	message = message.Get("data")
 
 	nickname, err := message.Get("nickname").String()
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 
 	//Create the player
@@ -104,26 +123,25 @@ func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	var applied bool
 	applied, err = createNewPlayer(player)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 
 	if !applied {
 		//if player was not created, do not return the new player response
-		return
+		return nil
 	}
 
 	//successfully created the player, so respond now
 	response, err := createNewPlayerResponse(player)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 
 	hhserver.SendJSON(clientID, response)
+	return nil
 }
 
-func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) {
+func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) error {
 	//parse data
 	location := message.Get("data").Get("location")
 	newX, errX := location.Get("centre").Get("x").Float64()
@@ -132,40 +150,32 @@ func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) 
 
 	switch {
 	case errX != nil:
-		fmt.Println(errX)
-		return
+		return errX
 	case errY != nil:
-		fmt.Println(errY)
-		return
+		return errY
 	case errDirection != nil:
-		fmt.Println(errDirection)
-		return
+		return errDirection
 	default:
 		break
 	}
 
 	//apply update
 	_, err := updatePlayerPosition(hhdatabase.CreatePlayer(clientID), newX, newY, newDirection)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	return err
 }
 
-func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
+func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) error {
 	//which fruit is it?
 	idstr, idstrErr := message.Get("data").Get("fruit_id").String()
 	id, idErr := uuid.FromString(idstr)
 
 	//check for parsing errors, indicates invalid id
 	if idstrErr != nil {
-		fmt.Println(idstrErr)
-		return
+		return idstrErr
 	}
 
 	if idErr != nil {
-		fmt.Println(idErr)
-		return
+		return idErr
 	}
 
 	fruit := hhdatabase.CreateFruit(&id)
@@ -178,37 +188,11 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	newFruit.Position.Y = rand.Float64() * yBoardWidth
 
 	//consume the fruit
-	applied, err := consumeFruit(player, fruit, newFruit)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if !applied {
-		//opertion was invalid, don't proceed
-		return
-	}
-
-	//the fruit was consumed, tell all the clients that it is gone.
-	fruitConsumedMessage, respErr := createFruitConsumptionMessage(clientID, &id)
-	if respErr != nil {
-		fmt.Println(respErr)
-		return
-	}
-
-	hhserver.SendJSONAll(fruitConsumedMessage)
-
-	//and tell them about the new fruit
-	newFruitMessage, mesgErr := createNewFruitMessage(newFruit)
-	if mesgErr != nil {
-		fmt.Println(mesgErr)
-		return
-	}
-
-	hhserver.SendJSONAll(newFruitMessage)
+	_, err := consumeFruit(player, fruit, newFruit)
+	return err
 }
 
-func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
+func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) error {
 	//parse out player ids
 	consumerStr, consumerStrErr := message.Get("data").Get("consumer_id").String()
 	consumerID, consumerErr := uuid.FromString(consumerStr)
@@ -218,17 +202,13 @@ func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
 
 	switch {
 	case consumerStrErr != nil:
-		fmt.Println(consumerStrErr)
-		return
+		return consumerStrErr
 	case consumerErr != nil:
-		fmt.Println(consumerErr)
-		return
+		return consumerErr
 	case consumedStrErr != nil:
-		fmt.Println(consumedStrErr)
-		return
+		return consumedStrErr
 	case consumedErr != nil:
-		fmt.Println(consumedErr)
-		return
+		return consumedErr
 	default:
 		break
 	}
@@ -237,32 +217,6 @@ func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) {
 	consumed := hhdatabase.CreatePlayer(&consumedID)
 
 	//apply consumption
-	applied, err := consumePlayer(consumer, consumed)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if !applied {
-		//the operation was invalid
-		return
-	}
-
-	//tell the consumer that they have grown
-	playerConsumptionMessage, respErr := createConsumePlayerResponse(&consumer.ID, consumer.Score)
-	if respErr != nil {
-		fmt.Println(respErr)
-		return
-	}
-
-	hhserver.SendJSON(&consumer.ID, playerConsumptionMessage)
-
-	//tell the consumed that they died
-	playerDeathMessage, mesgErr := createPlayerDeathMessage(&consumed.ID)
-	if mesgErr != nil {
-		fmt.Println(mesgErr)
-		return
-	}
-
-	hhserver.SendJSON(&consumed.ID, playerDeathMessage)
+	_, err := consumePlayer(consumer, consumed)
+	return err
 }

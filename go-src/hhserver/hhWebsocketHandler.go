@@ -1,8 +1,6 @@
 package hhserver
 
 import (
-	"fmt"
-
 	"github.com/dustin/go-broadcast"
 	uuid "github.com/satori/go.uuid"
 
@@ -99,6 +97,12 @@ func globalWebsocketSync() {
 			case toClose := <-activeConnections.closeConn:
 				//remove the connection
 				delete(activeConnections.connections, *toClose)
+
+				//tell the business logic the client is gone
+				message := MessageJSON{}
+				message.ClientID = toClose
+				message.Message = nil
+				activeConnections.rxListeners.Submit(&message)
 				break
 			}
 		}
@@ -126,8 +130,6 @@ func websocketJSONReceive(conn *activeConnection) {
 	err := conn.conn.ReadJSON(request)
 
 	if err != nil {
-		fmt.Println("Error reading json.", err)
-
 		//something is wrong with the connection, kill the handlers
 		activeConnections.closeConn <- conn.clientID
 		return
