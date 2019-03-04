@@ -59,6 +59,60 @@ func createNewPlayer(player *hhdatabase.Player) (bool, error) {
 	return applied, nil
 }
 
+func deletePlayer(player *hhdatabase.Player) (bool, error) {
+	//we need to delete the player, so begin an operation
+	conn, err := hhdatabase.BeginOperation()
+	if err != nil {
+		return false, err
+	}
+	defer hhdatabase.EndOperation(conn)
+
+	//infinite loop for retries
+	//will exit if
+	//- the player is deleted successfully
+	//- the player no longer exists
+	//- a redis operation fails (implies the server is not available)
+	for {
+		//start a watch so the delete is valid
+		err = hhdatabase.Watch(player, conn)
+		if err != nil {
+			return false, err
+		}
+
+		//check that the player exists so we can return applied correctly
+		//(applied will  be true on delete if the player never existed, which gives a poor impression to the caller)
+		_, exists, loadErr := hhdatabase.Load(player, conn)
+		if loadErr != nil {
+			return false, loadErr
+		}
+
+		if !exists {
+			return false, nil
+		}
+
+		//try to delete the player
+		err = hhdatabase.Multi(conn)
+		if err != nil {
+			return false, err
+		}
+
+		err = hhdatabase.Delete(player, conn)
+		if err != nil {
+			return false, err
+		}
+
+		var applied bool
+		applied, err = hhdatabase.Exec(conn)
+		if err != nil {
+			return false, err
+		}
+
+		if applied {
+			return true, nil
+		}
+	}
+}
+
 //Update a player position in the database
 //
 //returns true if the position was updated, false otherwise

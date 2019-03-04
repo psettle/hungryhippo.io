@@ -27,20 +27,8 @@ function onWebsocketReceive(message) {
     case messageType.newPlayerResponse:
       onNewPlayerResponse(message.data)
       break;
-    case messageType.positionUpdateMessage:
-      onPositionUpdateMessage(message.data)
-      break;
-    case messageType.consumeFruitMessage:
-      onConsumeFruitMessage(message.data)
-      break;
-    case messageType.newFruitMessage:
-      onNewFruitMessage(message.data)
-      break;
-    case messageType.consumePlayerResponse:
-      onConsumePlayerResponse(message.data)
-      break;
-    case messageType.playerDeathMessage:
-      onPlayerDeathMessage(message.data)
+    case messageType.gamestateUpdateMessage:
+      onGamestateUpdateMessage(message.data)
       break;
     default:
       console.log("Unknown message received:" + message.type)
@@ -49,32 +37,12 @@ function onWebsocketReceive(message) {
 
 function onNewPlayerResponse(message) {
   clientID = message.id
-
-  //draw initial position, etc.
-  console.log("New Player: " + JSON.stringify(message))
+  processNewIdUpdate(clientID)
 }
 
-function onPositionUpdateMessage(message) {
-  console.log("Position update message: " + JSON.stringify(message))
+function onGamestateUpdateMessage(message) {
+  processGamestateUpdate(message.players.elements, message.players.count, message.fruits.elements, message.fruits.count)
 }
-
-function onConsumeFruitMessage(message) {
-  console.log("Fruit Consumed: " + JSON.stringify(message))
-}
-
-function onNewFruitMessage(message) {
-  console.log("New Fruit: " + JSON.stringify(message))
-}
-
-function onConsumePlayerResponse(message) {
-  console.log("player consumed: " + JSON.stringify(message))
-}
-
-function onPlayerDeathMessage(message) {
-  console.log("Player death: " + JSON.stringify(message))
-}
-
-
 
 //generates and sends a request to join the game to the server
 function sendNewPlayerRequest(nickname) {
@@ -83,14 +51,14 @@ function sendNewPlayerRequest(nickname) {
 }
 
 //send a local position update event to the server
-function sendPositionUpdateMessage(newX, newY, newDirection) {
+function sendPositionUpdateRequest(newX, newY, newDirection) {
   if(clientID == null)
   {
     console.log("Position update without id")
     return
   }
 
-  message = createPositionUpdateMessage(clientID, newX, newY, newDirection)
+  message = createPositionUpdateRequest(clientID, newX, newY, newDirection)
   ws.send(message)
 }
 
