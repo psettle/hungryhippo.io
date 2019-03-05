@@ -11,7 +11,7 @@ var MessageCreator = (function() {
       consumePlayerRequest  :   messageTypeVal++, //a player asks to consume another player
     }
     
-    publicMethods = {
+    var publicMethods = {
         createNewPlayerRequest: function(nickname) {
             return createNewPlayerRequest(nickname)
         },

@@ -1,5 +1,5 @@
 var Movement = (function() {
-    publicMethods = {
+    var publicMethods = {
         //subscribe to receive up to date direction
         //(dx, dy)
         subscribe: function(cb) {
@@ -36,14 +36,14 @@ var Movement = (function() {
         mousey: getHeight() / 2,
     }
 
-    subscribers = []
+    var subscribers = []
 
     function subscribe(cb) {
         subscribers.push(cb)
     }
 
     function publish() {
-        d = getDirection()
+        var d = getDirection()
 
         for(var i = 0; i < subscribers.length; ++i) {
             subscribers[i](d.dx, d.dy)
@@ -51,11 +51,11 @@ var Movement = (function() {
     }
 
     function getDirection() {
-        w = getWidth() / 2
-        h = getHeight() / 2
+        var w = getWidth() / 2
+        var h = getHeight() / 2
 
-        dx = (position.mousex - w) / w;
-        dy = (position.mousey - h) / h;
+        var dx = (position.mousex - w) / w;
+        var dy = (position.mousey - h) / h;
 
         return {
             dx: dx,

@@ -21,6 +21,8 @@ func StartServer() {
 	http.Handle("/js/", http.StripPrefix("/js/", jsFileServer))
 	imgFileServer := http.FileServer(http.Dir("public/images/"))
 	http.Handle("/img/", http.StripPrefix("/img/", imgFileServer))
+	cssFileServer := http.FileServer(http.Dir("public/css-src/"))
+	http.Handle("/css/", http.StripPrefix("/css/", cssFileServer))
 
 	//setup websocket entry point
 	http.HandleFunc("/ws", socketRequestHandler)

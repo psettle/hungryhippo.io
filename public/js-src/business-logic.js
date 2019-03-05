@@ -1,38 +1,78 @@
 var BusinessLogic = (function() {
-publicMethods = {} //no one calls business logic
+    var publicMethods = {} //no one calls business logic
     
-//This is basically a promises system, theres probably a cleaner way
-//to do this
-var dependencyCount = 1;
-SpriteDrawing.ready(readyYet);
+    //This is basically a promises system, theres probably a cleaner way
+    //to do this
+    var dependencyCount = 1;
+    SpriteDrawing.ready(readyYet);
 
-function readyYet() {
-    dependencyCount--;
-    if(dependencyCount <= 0) {
-        onReady()
+    function readyYet() {
+        dependencyCount--;
+        if(dependencyCount <= 0) {
+            onReady()
+        }
     }
-}
 
-function onReady() {
-    Movement.subscribe(onDirectionChanged)
-    AppServer.subscribe(processGamestateUpdate)
+    function onReady() {
+        Movement.subscribe(onDirectionChanged)
+        AppServer.subscribe(processGamestateUpdate)
+        initNicknameTextbox()
 
-    var fruit1 = SpriteDrawing.Fruit.drawFruit(0.5, 0.5, 0.05);
-    var fruit2 = SpriteDrawing.Fruit.drawFruit(0.1, 0.1, 0.25);
+        var fruit1 = SpriteDrawing.Fruit.drawFruit(0.5, 0.5, 0.05);
+        var fruit2 = SpriteDrawing.Fruit.drawFruit(0.1, 0.1, 0.25);  
+    }
 
-    $("[name='nickname']").change(function() {
-        //send a request to join the game to the server
-        AppServer.sendNewPlayerRequest($(this).val())
-    })
-}
+    function onDirectionChanged(dx, dy) {
+        //TODO: draw local direction from cursor
+        //console.log(dx, dy)
+    }
 
-function onDirectionChanged(dx, dy) {
+    function processGamestateUpdate(players, fruits) {
+        //TODO: draw current gamestate from update
+        console.log(players)
+    }
 
-}
+    function initNicknameTextbox() {
+        //grab relevant elements
+        var input = $('.search-form');
+        var search = $('input')
+        var button = $('button');
 
-function processGamestateUpdate(players, playerCount, fruits, fruitCount) {
-    //TODO: draw current gamestate from update
-}
+        input.on('keyup', function (e) {
+            //treat enter as a click on the button
+            if( e.keyCode == 13) {
+                button.trigger('click')
+            }
+        })
+        
+        button.on('click', function(e) {
+            nickname = search.val()
 
-return publicMethods
+            if (nickname == "") {
+                //no name in the field
+                return
+            }
+
+            search.val("")
+
+            //send the new player request
+            AppServer.sendNewPlayerRequest(nickname)
+            //hide the nickname box
+            input.removeClass('active');
+        })
+        search.on('focus', function() {
+            input.addClass('focus');
+        })
+
+        search.on('blur', function() {
+            search.val().length != 0 ? 
+                input.addClass('focus') :
+                input.removeClass('focus');
+        })
+
+        //trigger an 'open' animation
+        input.addClass('active');
+    }
+
+    return publicMethods
 })();

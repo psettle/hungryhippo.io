@@ -45,7 +45,7 @@ var SpriteDrawing = (function() {
         app.renderer.view.style.display = "block";
         app.renderer.autoDensity = true;
         app.renderer.resize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(app.view);
+        $("body").append(app.view);
         //finished initializing everything, tell listeners we are ready
         for(var i = 0; i <  init.readyCallbacks.length; ++i) {
             init.readyCallbacks[i]();
