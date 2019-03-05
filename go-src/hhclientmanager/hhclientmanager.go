@@ -120,8 +120,18 @@ func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) error
 	player.Location.Direction = rand.Float64() * maxDirection
 	player.Score = 0
 
+	//create the new fruit
+	fruitID, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
+
+	fruit := hhdatabase.CreateFruit(&fruitID)
+	fruit.Position.X = rand.Float64() * xBoardWidth
+	fruit.Position.Y = rand.Float64() * xBoardWidth
+
 	var applied bool
-	applied, err = createNewPlayer(player)
+	applied, err = createNewPlayer(player, fruit)
 	if err != nil {
 		return err
 	}

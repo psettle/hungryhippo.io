@@ -45,18 +45,45 @@ func Watch(i Item, conn *redis.Client) error {
 func Load(i Item, conn *redis.Client) (Item, bool, error) {
 	reply, err := conn.Cmd("HMGET", i.getValueKey(), i.listKeys()).List()
 	if err != nil {
-		return i, false, err
+		return nil, false, err
 	}
 
 	//copy result to object
 	i, err = i.fromList(reply)
 	if err != nil {
 		//error indicates the list was invalid, and since we know the command didn't fail, the item must not exist
-		return i, false, nil
+		return nil, false, nil
 	}
 
 	//no error
 	return i, true, nil
+}
+
+//LoadRandom gets a random member of item, returns true if the entry existed, false on not exists or error
+func LoadRandom(itemtype Item, conn *redis.Client) (Item, bool, error) {
+	//fetch 1 random element
+	reply, err := conn.Cmd("SRANDMEMBER", itemtype.getMembersKey(), 1).List()
+	if err != nil {
+		return nil, false, err
+	}
+
+	if len(reply) == 0 {
+		//no such item exists
+		return nil, false, nil
+	}
+
+	uuid := uuid.FromStringOrNil(reply[0])
+	iLocal := itemtype.create(&uuid)
+
+	//load the valid element
+	return Load(iLocal, conn)
+}
+
+//WatchType puts a watch on an item type, this will cause a transaction to fail if members are added or removed
+//          of the provided type, not if an existing member is modified
+func WatchType(itemtype Item, conn *redis.Client) error {
+	reply := conn.Cmd("WATCH", itemtype.getMembersKey())
+	return reply.Err
 }
 
 //WatchMany starts a watch on a set of item entries
@@ -67,9 +94,9 @@ func Load(i Item, conn *redis.Client) (Item, bool, error) {
 //if items == nil, a watch will be put on all items
 func WatchMany(itemtype Item, items []*Item, conn *redis.Client) error {
 	//start with a watch on the item set
-	reply := conn.Cmd("WATCH", itemtype.getMembersKey())
-	if reply.Err != nil {
-		return reply.Err
+	err := WatchType(itemtype, conn)
+	if err != nil {
+		return err
 	}
 
 	var idStrings []string
@@ -88,7 +115,7 @@ func WatchMany(itemtype Item, items []*Item, conn *redis.Client) error {
 	}
 
 	//put a watch on all members
-	reply = conn.Cmd("WATCH", idStrings)
+	reply := conn.Cmd("WATCH", idStrings)
 	if reply.Err != nil {
 		return reply.Err
 	}
