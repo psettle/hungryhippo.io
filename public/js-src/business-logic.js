@@ -72,6 +72,7 @@ var BusinessLogic = (function() {
 
         //trigger an 'open' animation
         input.addClass('active');
+        search.focus();
     }
 
     return publicMethods
