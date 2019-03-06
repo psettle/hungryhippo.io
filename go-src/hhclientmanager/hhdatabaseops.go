@@ -10,10 +10,10 @@ const xBoardWidth = 1000.0
 const yBoardWidth = 1000.0
 const maxDirection = math.Pi * 2
 
-//Insert a new player into the database
+//Insert a new player and a new fruit into the database
 //
-//returns true if the player was created, false otherwise
-func createNewPlayer(player *hhdatabase.Player) (bool, error) {
+//returns true if the player and fruit were created, false otherwise
+func createNewPlayer(player *hhdatabase.Player, fruit *hhdatabase.Fruit) (bool, error) {
 	//we need to save the player, so begin an operation
 	conn, err := hhdatabase.BeginOperation()
 	if err != nil {
@@ -23,6 +23,12 @@ func createNewPlayer(player *hhdatabase.Player) (bool, error) {
 
 	//put a watch on the player to avoid conflicts
 	err = hhdatabase.Watch(player, conn)
+	if err != nil {
+		return false, err
+	}
+
+	//put a watch on the fruit to avoid conflicts
+	err = hhdatabase.Watch(fruit, conn)
 	if err != nil {
 		return false, err
 	}
@@ -37,14 +43,29 @@ func createNewPlayer(player *hhdatabase.Player) (bool, error) {
 		return false, nil
 	}
 
+	//load the fruit to check if it exists already
+	_, exists, err = hhdatabase.Load(fruit, conn)
+	if err != nil {
+		return false, err
+	}
+	if exists {
+		return false, nil
+	}
+
 	//start a transaction to prepare for a save
 	err = hhdatabase.Multi(conn)
 	if err != nil {
 		return false, err
 	}
 
-	//queue the save operation
+	//queue the save operation on the player
 	err = hhdatabase.Save(player, conn)
+	if err != nil {
+		return false, err
+	}
+
+	//queue the save operation on the fruit
+	err = hhdatabase.Save(fruit, conn)
 	if err != nil {
 		return false, err
 	}
@@ -69,12 +90,19 @@ func deletePlayer(player *hhdatabase.Player) (bool, error) {
 
 	//infinite loop for retries
 	//will exit if
-	//- the player is deleted successfully
+	//- the player and a fruit is deleted successfully
+	//- only the player is deleted successfully (there are no fruits to delete)
 	//- the player no longer exists
 	//- a redis operation fails (implies the server is not available)
 	for {
 		//start a watch so the delete is valid
 		err = hhdatabase.Watch(player, conn)
+		if err != nil {
+			return false, err
+		}
+
+		//also need a watch on the fruit type so if we fail to get one, we are sure it's because there are none left
+		err = hhdatabase.WatchType(hhdatabase.Fruit{}, conn)
 		if err != nil {
 			return false, err
 		}
@@ -90,7 +118,12 @@ func deletePlayer(player *hhdatabase.Player) (bool, error) {
 			return false, nil
 		}
 
-		//try to delete the player
+		//fetch a random member of fruits
+		var item hhdatabase.Item
+		item, exists, err = hhdatabase.LoadRandom(hhdatabase.Fruit{}, conn)
+		fruit := item.(hhdatabase.Fruit)
+
+		//try to delete the player and fruit
 		err = hhdatabase.Multi(conn)
 		if err != nil {
 			return false, err
@@ -99,6 +132,14 @@ func deletePlayer(player *hhdatabase.Player) (bool, error) {
 		err = hhdatabase.Delete(player, conn)
 		if err != nil {
 			return false, err
+		}
+
+		//only try to delete the fruit if we are sure it exists
+		if exists {
+			err = hhdatabase.Delete(fruit, conn)
+			if err != nil {
+				return false, err
+			}
 		}
 
 		var applied bool
