@@ -27,6 +27,19 @@ var SpriteDrawing = (function() {
                 eraseFruit(fruit)
             }
         },
+        Player : {
+            drawPlayer: function(x, y, scale) {
+                return drawPlayer(x, y, scale)
+            },
+            erasePlayer: function(player) {
+                erasePlayer(player)
+            }
+        },
+        Sprite: {
+            setDirection: function(sprite, dx, dy) {
+                setDirection(sprite, dx, dy)
+            }
+        }
     }
 
     var app = new PIXI.Application({width: 500, height: 500});
@@ -34,6 +47,7 @@ var SpriteDrawing = (function() {
     //setup textures we need, must finish before API functions below are called
     loader
         .add("img/watermelon.png")
+        .add("img/hippo.png")
         .load(init.readyYet);
 
     //init for pixi.js, must be ran before api functions below are called
@@ -52,6 +66,20 @@ var SpriteDrawing = (function() {
         }
     }
 
+    function setDirection(sprite, dx, dy) {
+        //figure out what direction (dx, dy) defines
+        var a = Math.atan(dy / dx)
+        if(dx < 0) {
+            a += Math.PI
+        }
+
+        //PIXI treats up as the default direction, instead of right like atan
+        a += Math.PI / 2
+
+        //set the sprite to that rotation
+        sprite.rotation = a
+    }
+
     function drawFruit(x, y, scale) {
         x *= app.screen.width;
         y *= app.screen.height;
@@ -66,6 +94,27 @@ var SpriteDrawing = (function() {
     }
 
     function eraseFruit(fruit) {
+        app.stage.removeChild(fruit);
+    }
+
+    function drawPlayer(x, y, scale) {
+        x *= app.screen.width;
+        y *= app.screen.height;
+
+        var texture = loader.resources["img/hippo.png"].texture
+
+        var hippo = new PIXI.Sprite(texture);
+
+        hippo.pivot.x = texture.width / 2
+        hippo.pivot.y = texture.height / 2
+
+        hippo.scale.set(scale, scale);
+        hippo.position.set(x, y);
+        app.stage.addChild(hippo);
+        return hippo;
+    }
+
+    function erasePlayer(player) {
         app.stage.removeChild(fruit);
     }
 

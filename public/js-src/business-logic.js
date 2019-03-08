@@ -14,22 +14,60 @@ var BusinessLogic = (function() {
     }
 
     function onReady() {
-        Movement.subscribe(onDirectionChanged)
         AppServer.subscribe(processGamestateUpdate)
         initNicknameTextbox()
-
-        var fruit1 = SpriteDrawing.Fruit.drawFruit(0.5, 0.5, 0.05);
-        var fruit2 = SpriteDrawing.Fruit.drawFruit(0.1, 0.1, 0.25);  
     }
 
-    function onDirectionChanged(dx, dy) {
-        //TODO: draw local direction from cursor
-        //console.log(dx, dy)
+    var gamestate = {
+        local : {
+            player: null,           //the player associated with this client
+            playerSprite: null,     //the sprite of the player assocaited with this client
+            scale: 0.2,             //the scale of the local player
+        }
     }
 
     function processGamestateUpdate(players, fruits) {
-        //TODO: draw current gamestate from update
-        console.log(players)
+        //find outself in the gamestate
+        gamestate.local.player = findLocalPlayer(players)
+
+        //check if we've joined the game
+        if(gamestate.local.player == null) {
+            return;
+        }
+
+        //draw ourselves, if we haven't yet, it is easy because
+        //- we are always the same size
+        //- we are always in the middle of the screen
+        //- we always face the cursor
+        if(gamestate.local.playerSprite == null) {
+            //draw self in middle of window
+            gamestate.local.playerSprite = SpriteDrawing.Player.drawPlayer(0.5, 0.5, gamestate.local.scale)
+            //register to receive direction updates
+            Movement.subscribe(onDirectionChanged)
+
+            //apply the first movement event so the hippo starts the right way
+            var d = Movement.getDirection()
+            onDirectionChanged(d.dx, d.dy)
+        }    
+    }
+
+     
+    function onDirectionChanged(dx, dy) {
+        SpriteDrawing.Sprite.setDirection(gamestate.local.playerSprite, dx, dy)
+    }
+
+    function findLocalPlayer(players) {
+        clientID = AppServer.getClientID()
+
+        for(var i = 0; i < players.length; ++i) {
+            var player = players[i]
+
+            if(player.id == clientID) {
+                return player
+            }
+        }
+
+        return null
     }
 
     function initNicknameTextbox() {
