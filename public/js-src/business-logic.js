@@ -16,6 +16,8 @@ var BusinessLogic = (function() {
     function onReady() {
         AppServer.subscribe(processGamestateUpdate)
         initNicknameTextbox()
+
+        SpriteDrawing.Fruit.drawFruit(0.25, 0.25, 0.1)
     }
 
     var gamestate = {
@@ -53,7 +55,12 @@ var BusinessLogic = (function() {
 
      
     function onDirectionChanged(dx, dy) {
-        SpriteDrawing.Sprite.setDirection(gamestate.local.playerSprite, dx, dy)
+        const speedScale = 10.0
+
+        dx *= speedScale
+        dy *= speedScale
+
+        SpriteDrawing.Player.setLocalSpeed(gamestate.local.playerSprite, dx, dy)
     }
 
     function findLocalPlayer(players) {

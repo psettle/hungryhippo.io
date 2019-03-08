@@ -33,37 +33,76 @@ var SpriteDrawing = (function() {
             },
             erasePlayer: function(player) {
                 erasePlayer(player)
+            },
+            setLocalSpeed: function(sprite, dx, dy) {
+                setDirection(sprite, dx, dy)
+                setBackgroundSpeed(-dx, -dy)
+                setSpeed(sprite, dx, dy)
             }
         },
         Sprite: {
             setDirection: function(sprite, dx, dy) {
                 setDirection(sprite, dx, dy)
+            },
+            setSpeed: function(sprite, dx, dy) {
+                setSpeed(sprite, dx, dy)
             }
         }
     }
 
-    var app = new PIXI.Application({width: 500, height: 500});
+    var state = {
+        sprites: [],
+        background: null,
+        movingSprites: [],
+    }
+
+    var app = new PIXI.Application({width: 1000, height: 1000});
     var loader = PIXI.loader;
     //setup textures we need, must finish before API functions below are called
     loader
         .add("img/watermelon.png")
         .add("img/hippo.png")
+        .add("img/swampbig.png")
         .load(init.readyYet);
 
     //init for pixi.js, must be ran before api functions below are called
     $(document).ready(init.readyYet);
 
     function onReady() {
-        app.renderer.backgroundColor = 0x061639;
         app.renderer.view.style.position = "absolute";
         app.renderer.view.style.display = "block";
         app.renderer.autoDensity = true;
         app.renderer.resize(window.innerWidth, window.innerHeight);
         $("body").append(app.view);
+
+        backgroundInit()
+
+        app.ticker.add(function(delta) {
+            speedUpdates(delta)
+        })
+
         //finished initializing everything, tell listeners we are ready
         for(var i = 0; i <  init.readyCallbacks.length; ++i) {
             init.readyCallbacks[i]();
         }
+    }
+
+    function speedUpdates(delta) {
+        var dxBackground = state.background.dx
+        var dyBackground = state.background.dy
+
+        for(var i = 0; i < state.movingSprites.length; ++i) {
+            state.movingSprites[i].position.x -= dxBackground * delta
+            state.movingSprites[i].position.y -= dyBackground * delta
+        }
+
+        for(var i = 0; i < state.sprites.length; ++i) {
+            state.sprites[i].position.x += dxBackground * delta
+            state.sprites[i].position.y += dyBackground * delta
+        }
+
+        state.background.tilePosition.x += dxBackground * delta
+        state.background.tilePosition.y += dyBackground * delta
     }
 
     function setDirection(sprite, dx, dy) {
@@ -80,6 +119,20 @@ var SpriteDrawing = (function() {
         sprite.rotation = a
     }
 
+    function setSpeed(sprite, dx, dy) {
+        sprite.dx = dx
+        sprite.dy = dy
+
+        if(state.movingSprites.indexOf(sprite) === -1) {
+            state.movingSprites.push(sprite)
+        }
+    }
+
+    function setBackgroundSpeed(dx, dy) {
+        state.background.dx = dx
+        state.background.dy = dy
+    }
+
     function drawFruit(x, y, scale) {
         x *= app.screen.width;
         y *= app.screen.height;
@@ -90,6 +143,9 @@ var SpriteDrawing = (function() {
         watermelon.scale.set(scale, scale);
         watermelon.position.set(x, y);
         app.stage.addChild(watermelon);
+
+        state.sprites.push(watermelon)
+
         return watermelon;
     }
 
@@ -111,11 +167,29 @@ var SpriteDrawing = (function() {
         hippo.scale.set(scale, scale);
         hippo.position.set(x, y);
         app.stage.addChild(hippo);
+
+        state.sprites.push(hippo)
+
         return hippo;
     }
 
     function erasePlayer(player) {
-        app.stage.removeChild(fruit);
+        app.stage.removeChild(player);
+    }
+
+    function backgroundInit() {
+        // create a texture from an image path
+        var texture = loader.resources["img/swampbig.png"].texture
+
+        var stage = new PIXI.Container();
+
+        // create a tiling sprite
+        state.background = new PIXI.extras.TilingSprite(texture, app.screen.width, app.screen.height);
+        state.background.tileScale.set(2, 2)
+        setBackgroundSpeed(0, 0)
+        stage.addChild(state.background);
+
+        app.stage.addChild(stage)
     }
 
     return publicMethods;
