@@ -1,5 +1,5 @@
 var Movement = (function() {
-    var publicMethods = {
+    var pub = {
         //subscribe to receive up to date direction
         //(dx, dy)
         subscribe: function(cb) {
@@ -71,5 +71,5 @@ var Movement = (function() {
         return $(window).height();
     }
 
-    return publicMethods
+    return pub
 })();

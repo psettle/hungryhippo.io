@@ -3,7 +3,7 @@ var AppServer = (function() {
     const ws = new WebSocket("ws://" + window.location.hostname + "/ws")
     var clientID = null
     
-    var publicMethods = {
+    var pub = {
         //subscribe for gamestate updates
         //(players, players.count, fruits, fruits.count)
         subscribe: function (cb) {
@@ -110,5 +110,5 @@ var AppServer = (function() {
         ws.send(message)
     }
 
-    return publicMethods;
+    return pub;
 })();

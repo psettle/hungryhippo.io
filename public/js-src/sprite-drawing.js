@@ -11,7 +11,7 @@ var SpriteDrawing = (function() {
         }
     }
 
-    publicMethods = {
+    pub = {
         ready: function(cb) {
             if(init.ready) {
                 cb()
@@ -46,6 +46,17 @@ var SpriteDrawing = (function() {
             },
             setSpeed: function(sprite, dx, dy) {
                 setSpeed(sprite, dx, dy)
+            },
+            setScale: function(sprite, scale) {
+                setScale(sprite, scale)
+            },
+            setPosition: function(sprite, x, y) {
+                setPosition(sprite, x, y)
+            },
+            //register a handler for position updates
+            //(sprite, dx, dy), in window size units, independent of player perspective
+            setGamePositionHandler: function(sprite, cb) {
+                sprite.updateGamePos = cb
             }
         }
     }
@@ -91,32 +102,32 @@ var SpriteDrawing = (function() {
         var dxBackground = state.background.dx
         var dyBackground = state.background.dy
 
+        //apply movement to moving objects
         for(var i = 0; i < state.movingSprites.length; ++i) {
-            state.movingSprites[i].position.x -= dxBackground * delta
-            state.movingSprites[i].position.y -= dyBackground * delta
+            var sprite = state.movingSprites[i]
+
+            translateSprite(sprite, sprite.dx * delta, sprite.dy * delta)
         }
 
+        // apply map translation to all objects, so they appear static on the map while not moving
         for(var i = 0; i < state.sprites.length; ++i) {
-            state.sprites[i].position.x += dxBackground * delta
-            state.sprites[i].position.y += dyBackground * delta
+            var sprite = state.sprites[i]
+
+            sprite.position.x += dxBackground * delta
+            sprite.position.y += dyBackground * delta
         }
 
+        //move the background to create perception of movement
         state.background.tilePosition.x += dxBackground * delta
         state.background.tilePosition.y += dyBackground * delta
     }
 
     function setDirection(sprite, dx, dy) {
-        //figure out what direction (dx, dy) defines
-        var a = Math.atan(dy / dx)
-        if(dx < 0) {
-            a += Math.PI
-        }
+        //set the sprite to that direction
+        sprite.rotation = PositionManager.toAngle(dx, dy)
 
-        //PIXI treats up as the default direction, instead of right like atan
-        a += Math.PI / 2
-
-        //set the sprite to that rotation
-        sprite.rotation = a
+        //add another 90 deg cause pixi uses weird angles
+        sprite.rotation += Math.PI / 2
     }
 
     function setSpeed(sprite, dx, dy) {
@@ -125,6 +136,32 @@ var SpriteDrawing = (function() {
 
         if(state.movingSprites.indexOf(sprite) === -1) {
             state.movingSprites.push(sprite)
+        }
+    }
+
+    function setScale(sprite, scale) {
+        sprite.scale.set(scale, scale)
+    }
+
+    function setPosition(sprite, x, y) {
+        x *= app.screen.width;
+        y *= app.screen.height;
+        
+        sprite.position.x = x
+        sprite.position.y = y
+    }
+
+    function translateSprite(sprite, dx, dy) {
+        sprite.position.x += dx
+        sprite.position.y += dy
+
+        if('updateGamePos' in sprite) {
+            //callback needs dx, dy in terms of window size, they are currently in pixels
+            dx /= app.screen.width
+            dy /= app.screen.height
+
+            //adjust game position if sprite cares
+            sprite.updateGamePos(sprite, dx, dy)
         }
     }
 
@@ -192,5 +229,5 @@ var SpriteDrawing = (function() {
         app.stage.addChild(stage)
     }
 
-    return publicMethods;
+    return pub;
 })();

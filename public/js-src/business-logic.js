@@ -1,5 +1,5 @@
 var BusinessLogic = (function() {
-    var publicMethods = {} //no one calls business logic
+    var pub = {} //no one calls business logic
     
     //This is basically a promises system, theres probably a cleaner way
     //to do this
@@ -23,58 +23,35 @@ var BusinessLogic = (function() {
     var gamestate = {
         local : {
             player: null,           //the player associated with this client
+            change: {               //local changes in position that haven't been sent to the server
+                x: 0,
+                y: 0
+            },
             playerSprite: null,     //the sprite of the player assocaited with this client
             scale: 0.2,             //the scale of the local player
+        },
+        players : {
+
         }
     }
 
     function processGamestateUpdate(players, fruits) {
-        //find outself in the gamestate
-        gamestate.local.player = findLocalPlayer(players)
+        //send an update based on changes since the last update
+        updateRemotePosition()
 
-        //check if we've joined the game
-        if(gamestate.local.player == null) {
-            return;
-        }
-
-        //draw ourselves, if we haven't yet, it is easy because
-        //- we are always the same size
-        //- we are always in the middle of the screen
-        //- we always face the cursor
-        if(gamestate.local.playerSprite == null) {
-            //draw self in middle of window
-            gamestate.local.playerSprite = SpriteDrawing.Player.drawPlayer(0.5, 0.5, gamestate.local.scale)
-            //register to receive direction updates
-            Movement.subscribe(onDirectionChanged)
-
-            //apply the first movement event so the hippo starts the right way
-            var d = Movement.getDirection()
-            onDirectionChanged(d.dx, d.dy)
-        }    
+        //manage player sprites using new info
+        PlayerManager.playersUpdated(players)
     }
 
-     
-    function onDirectionChanged(dx, dy) {
-        const speedScale = 10.0
+    function updateRemotePosition() {
+        //send a request to update position based on how far we went since the last update
+        var pos = PlayerManager.getLocalPosition()
 
-        dx *= speedScale
-        dy *= speedScale
-
-        SpriteDrawing.Player.setLocalSpeed(gamestate.local.playerSprite, dx, dy)
-    }
-
-    function findLocalPlayer(players) {
-        clientID = AppServer.getClientID()
-
-        for(var i = 0; i < players.length; ++i) {
-            var player = players[i]
-
-            if(player.id == clientID) {
-                return player
-            }
+        if(pos == null) {
+            return
         }
 
-        return null
+        AppServer.sendPositionUpdateRequest(pos.x, pos.y, pos.dir)
     }
 
     function initNicknameTextbox() {
@@ -120,5 +97,5 @@ var BusinessLogic = (function() {
         search.focus();
     }
 
-    return publicMethods
+    return pub
 })();

@@ -169,6 +169,8 @@ func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) 
 		break
 	}
 
+	fmt.Println(newX, newY, newDirection)
+
 	//apply update
 	_, err := updatePlayerPosition(hhdatabase.CreatePlayer(clientID), newX, newY, newDirection)
 	return err
