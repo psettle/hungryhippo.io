@@ -1,14 +1,14 @@
-var messageTypeVal = 0
-var messageType = {
-  newPlayerRequest      : messageTypeVal++, //A new player requests to join the game 
-  newPlayerResponse     : messageTypeVal++, //Server acknowledging new player request, provided initial condition
+let messageTypeVal = 0;
+let messageType = {
+  newPlayerRequest        : messageTypeVal++, //A new player requests to join the game
+  newPlayerResponse       : messageTypeVal++, //Server acknowledging new player request, provided initial condition
   
-  gamestateUpdateMessage : messageTypeVal++, //Server tells player about the position of all players and fruits
+  gamestateUpdateMessage  : messageTypeVal++, //Server tells player about the position of all players and fruits
 
-  positionUpdateRequest : messageTypeVal++, //A player asks to be moved to a new location
-  consumeFruitRequest  : messageTypeVal++, //A player asks to consume an existing fruit
-	consumePlayerRequest  : messageTypeVal++, //a player asks to consume another player
-}
+  positionUpdateRequest   : messageTypeVal++, //A player asks to be moved to a new location
+  consumeFruitRequest     : messageTypeVal++, //A player asks to consume an existing fruit
+  consumePlayerRequest    : messageTypeVal++, //a player asks to consume another player
+};
 
 function createNewPlayerRequest(nickname) {
   return JSON.stringify(

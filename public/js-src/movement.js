@@ -1,7 +1,6 @@
-
 window.onload = function () {
-    var currentX = 0;
-    var currentY = 0;
+    let currentX = 0;
+    let currentY = 0;
 
     document.addEventListener("keydown", function onEvent(event) {
         if (event.key === "ArrowLeft") {
