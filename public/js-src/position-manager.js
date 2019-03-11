@@ -7,6 +7,9 @@ var PositionManager = (function() {
         trimGamePosition: function(position) {
             return trimGamePosition(position)
         },
+        trimDirectionVector: function(vector) {
+            return trimDirectionVector(vector)
+        },
         toAngle(dx, dy) {
             return toAngle(dx, dy)
         },
@@ -18,17 +21,35 @@ var PositionManager = (function() {
 
     function gameToScreen(localPlayerPos, targetPos) {
         //compute difference from local player position
-        var dx = targetPos.x - localPlayerPos.x
-        var dy = targetPos.y - localPlayerPos.y
 
-        //normalize to map coordinates
-        dx /= (pub.mapSize / ( 2 * pub.mapScale))
-        dy /= (pub.mapSize / ( 2 * pub.mapScale))
 
-        return {
-            x: dx,
-            y: dy
+        var t = JSON.parse(JSON.stringify(targetPos))
+        var l = JSON.parse(JSON.stringify(localPlayerPos))
+
+        t = trimGamePosition(t)
+        l = trimGamePosition(l)
+
+        t.x += pub.mapSize
+        t.y += pub.mapSize
+
+        var d = {
+            x: t.x - l.x,
+            y: t.y - l.y
         }
+
+        d = trimDirectionVector(d)
+        
+        //normalize to map coordinates
+        d.x /= (pub.mapSize / ( 2 * pub.mapScale))
+        d.y /= (pub.mapSize / ( 2 * pub.mapScale))
+
+        d.x += 1
+        d.y += 1
+
+        d.x /= 2
+        d.y /= 2
+
+        return d
     }
 
     function trimGamePosition(position) {
@@ -50,6 +71,26 @@ var PositionManager = (function() {
         }
 
         return position
+    }
+
+    function trimDirectionVector(vector) {
+        while(vector.x < -pub.mapSize / 2) {
+            vector.x += pub.mapSize
+        }
+
+        while(vector.x > pub.mapSize / 2) {
+            vector.x -= pub.mapSize
+        }
+
+        while(vector.y < -pub.mapSize / 2) {
+            vector.y += pub.mapSize
+        }
+
+        while(vector.y > pub.mapSize / 2) {
+            vector.y -= pub.mapSize
+        }
+
+        return vector
     }
 
     function toAngle(dx, dy) {

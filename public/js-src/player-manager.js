@@ -47,11 +47,11 @@ var PlayerManager = (function() {
         //draw all players at the correct scale relative to the local player
         setPlayerScale()
 
-        //set all players to the correct positions relative to the local player
-        setPlayerPosition()
-
         //set all players to face and move the correct direction
         setPlayerDirection()
+
+        //set all players to the correct positions relative to the local player
+        setPlayerPosition()
     }
 
     function updateLocal(players) {
@@ -102,6 +102,8 @@ var PlayerManager = (function() {
                 playerRecords[id].prevPos.x += playerRecords[id].change.x
                 playerRecords[id].prevPos.y += playerRecords[id].change.y
 
+                playerRecords[id].prevPos = PositionManager.trimGamePosition(playerRecords[id].prevPos)
+
                 //update their 'true' position in their database record
                 playerRecords[id].dbRecord = player
 
@@ -110,8 +112,8 @@ var PlayerManager = (function() {
                     x: playerRecords[id].prevPos.x - playerRecords[id].dbRecord.location.centre.x,
                     y: playerRecords[id].prevPos.y - playerRecords[id].dbRecord.location.centre.y
                 }
-                
 
+                playerRecords[id].change = PositionManager.trimDirectionVector(playerRecords[id].change)
             } else {
                 createPlayer(player)
             }
@@ -156,9 +158,14 @@ var PlayerManager = (function() {
                 continue
             }
 
-            var mapPos = PositionManager.gameToScreen(localPos, player.dbRecord.location.centre)
+            //set them to where they are (except now accounting)
+            var currentPos = JSON.parse(JSON.stringify(player.prevPos))
+            // currentPos.x -= player.change.x
+            // currentPos.y -= player.change.y
 
-            //SpriteDrawing.Sprite.setPosition(player.sprite, mapPos.x, mapPos.y)
+            var mapPos = PositionManager.gameToScreen(localPos, currentPos)
+
+            SpriteDrawing.Sprite.setPosition(player.sprite, mapPos.x, mapPos.y)
         }
     }
 
@@ -189,7 +196,7 @@ var PlayerManager = (function() {
             dExpectationY = (dExpectationY / (60 * 0.25))
 
             dx += dExpectationX
-            dy += dExpectationY
+            dy += dExpectationY            
 
             //set direction and speed
             SpriteDrawing.Sprite.setDirection(player.sprite, dx, dy)
