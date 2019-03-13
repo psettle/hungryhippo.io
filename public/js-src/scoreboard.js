@@ -4,6 +4,7 @@ class Scoreboard {
     update(players) {
         if (players === null) return;
         // find the current player
+        let clientID = AppServer.getClientID()
         let me = players.find(function(player) {
             return player.id === clientID;
         });
@@ -17,13 +18,13 @@ class Scoreboard {
                 inTopTen = true;
                 $("#scoreboard").append(
                   '<tr>' +
-                    `<td><strong>${player.id}</strong></td>` +
+                    `<td><strong>${player.nickname}</strong></td>` +
                     `<td><strong>${player.points}</strong></td>`+
                   '</tr>');
             } else {
                 $("#scoreboard").append(
                   '<tr>' +
-                    `<td>${player.id}</td>` +
+                    `<td>${player.nickname}</td>` +
                     `<td>${player.points}</td>`+
                   '</tr>');
             }
@@ -34,7 +35,7 @@ class Scoreboard {
                 '<td></td>' +
               '</tr>' +
               '<tr>' +
-                `<td><strong>${me.id}</strong></td>` +
+                `<td><strong>${me.nickname}</strong></td>` +
                 `<td><strong>${me.points}</strong></td>`+
               '</tr>');
         }

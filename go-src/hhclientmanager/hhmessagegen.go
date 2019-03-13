@@ -108,6 +108,7 @@ func playerToSimplejson(player *hhdatabase.Player) *simplejson.Json {
 	json, err := simplejson.NewJson([]byte(`{
 		"id" : "` + player.ID.String() + `",
 		"points" : 0,
+		"nickname" : "` + player.Name + `",
 		"location" : {
 			"centre": {
 				"x": ` + fmt.Sprintf("%f", player.Location.Centre.X) + `,
