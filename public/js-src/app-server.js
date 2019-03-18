@@ -1,8 +1,5 @@
 //Singleton client manager component
 var AppServer = (function() {
-    const ws = new WebSocket("ws://" + window.location.hostname + "/ws")
-    var clientID = null
-    
     var pub = {
         //subscribe for gamestate updates
         //(players, players.count, fruits, fruits.count)
@@ -26,9 +23,17 @@ var AppServer = (function() {
         }
     }
 
-    ws.addEventListener('message', event => {
-        onWebsocketReceive(JSON.parse(event.data))
-    });
+    var clientID = null
+    
+    var ws = null
+
+    $.get("/ws", function(data) {
+        var server = JSON.parse(data)
+        ws = new WebSocket("ws://" + server.ip + ":" + server.port + "/ws")
+        ws.addEventListener('message', event => {
+            onWebsocketReceive(JSON.parse(event.data))
+        });
+    })
 
     //callback for messages from the server
     function onWebsocketReceive(message) {

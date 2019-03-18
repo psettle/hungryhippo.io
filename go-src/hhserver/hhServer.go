@@ -1,6 +1,7 @@
 package hhserver
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -13,7 +14,15 @@ var upgrader = websocket.Upgrader{
 }
 
 //StartServer starts the core http server for new clients;
-func StartServer() {
+func StartServer(port string) {
+	//register with the load balancer
+	_, err := http.Get("http://localhost:80/as?app-server-ip=localhost&app-server-port=" + port)
+
+	if err != nil {
+		fmt.Println("Failed to register with app server: ", err)
+		return
+	}
+
 	//setup static resource handlers
 	htmlFileServer := http.FileServer(http.Dir("public/html-src/"))
 	http.Handle("/", htmlFileServer)
@@ -24,10 +33,13 @@ func StartServer() {
 	cssFileServer := http.FileServer(http.Dir("public/css-src/"))
 	http.Handle("/css/", http.StripPrefix("/css/", cssFileServer))
 
+	//we allow websocket requests from any url, this allows the load balancer to balance onto app servers
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+
 	//setup websocket entry point
 	http.HandleFunc("/ws", socketRequestHandler)
 
-	http.ListenAndServe(":80", nil)
+	http.ListenAndServe(":"+port, nil)
 }
 
 //socketRequestHandler handles incoming requests to open a websocket from clients.
