@@ -9,6 +9,10 @@ var PlayerManager = (function() {
         //null if local player doesn't exist
         getLocalPosition: function() {
             return getLocalPosition()
+        },
+
+        getLocalScore: function() {
+            return getLocalScore()
         }
     }
 
@@ -224,6 +228,14 @@ var PlayerManager = (function() {
             y: position.y,
             dir: angle
         }
+    }
+
+    function getLocalScore() {
+        if(local == null) {
+            return null
+        }
+
+        return local.dbRecord.points
     }
 
     function createLocalPlayer(player) {

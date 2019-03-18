@@ -16,8 +16,6 @@ var BusinessLogic = (function() {
     function onReady() {
         AppServer.subscribe(processGamestateUpdate)
         initNicknameTextbox()
-
-        SpriteDrawing.Fruit.drawFruit(0.25, 0.25, 0.1)
     }
 
     var gamestate = {
@@ -41,6 +39,8 @@ var BusinessLogic = (function() {
 
         //manage player sprites using new info
         PlayerManager.playersUpdated(players)
+
+        FruitManager.fruitsUpdated(fruits)
     }
 
     function updateRemotePosition() {

@@ -17,6 +17,7 @@ var PositionManager = (function() {
         mapScale: 1,               //how many screens it takes to cross the map
         speed: 5,
         playerScale: 0.1,
+        fruitScale: 0.05
     }
 
     function gameToScreen(localPlayerPos, targetPos) {
