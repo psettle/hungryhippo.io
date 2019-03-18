@@ -91,6 +91,21 @@ func handleAppServerRegister(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("App Server Register " + appServer.ip + ":" + appServer.port)
 
 	servers.lock.Lock()
+
+	//check if we already have that server
+	for _, server := range servers.servers {
+		if server.ip != appServer.ip {
+			continue
+		}
+
+		if server.port != appServer.port {
+			continue
+		}
+
+		//we already know about this server, perhaps it was close and restarted while no clients existed.
+		return
+	}
+
 	servers.servers = append(servers.servers, appServer)
 	servers.lock.Unlock()
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	uuid "github.com/satori/go.uuid"
 )
 
 var upgrader = websocket.Upgrader{
@@ -50,6 +51,15 @@ func socketRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	values := r.URL.Query()
+
+	reJoinID := values.Get("rejoin-clientid")
+	reJoinUUID, err := uuid.FromString(reJoinID)
+
 	//listen for messages
-	go handleWebsocket(conn)
+	if reJoinID == "" || err != nil {
+		go handleWebsocket(conn)
+	} else {
+		go handleWebsocketRejoin(conn, &reJoinUUID)
+	}
 }

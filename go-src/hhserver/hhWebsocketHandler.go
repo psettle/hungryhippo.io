@@ -123,6 +123,19 @@ func handleWebsocket(conn *websocket.Conn) {
 	go websocketJSONReceive(&connectionRecord)
 }
 
+//handle an existing client connection
+func handleWebsocketRejoin(conn *websocket.Conn, clientID *uuid.UUID) {
+	//create a record for the connection
+	connectionRecord := activeConnection{}
+	connectionRecord.conn = conn
+
+	connectionRecord.clientID = clientID
+	activeConnections.newConn <- &connectionRecord
+
+	//start a receive task
+	go websocketJSONReceive(&connectionRecord)
+}
+
 //receive a single JSON message and pass to main handler thread
 func websocketJSONReceive(conn *activeConnection) {
 	request := simplejson.New()
