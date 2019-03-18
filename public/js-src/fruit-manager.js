@@ -15,6 +15,11 @@ var FruitManager = (function() {
     }
 
     function fruitsUpdated(fruits) {
+        //If local player isn't loaded yet then don't do anything
+        if(PlayerManager.getLocalScore() == null) {
+            return
+        }
+
         //only use current fruit status
         fixFruitSet(fruits)
 
@@ -58,10 +63,6 @@ var FruitManager = (function() {
     function setFruitScale() {
         var localPlayerSize = PlayerManager.getLocalScore()
 
-        if(localPlayerSize == null) {
-            //handle null case
-        }
-
         for(var id in fruitRecords) {
             var fruit = fruitRecords[id]
 
@@ -73,10 +74,6 @@ var FruitManager = (function() {
     function setFruitPosition() 
     {
         var localPlayerPosition = PlayerManager.getLocalPosition()
-
-        if(localPlayerPosition == null) {
-            //handle null case
-        }
 
         for(var id in fruitRecords) {
             var fruit = fruitRecords[id]
