@@ -11,7 +11,7 @@ var MessageCreator = (function() {
       consumePlayerRequest  :   messageTypeVal++, //a player asks to consume another player
     }
     
-    var publicMethods = {
+    var pub = {
         createNewPlayerRequest: function(nickname) {
             return createNewPlayerRequest(nickname)
         },
@@ -80,5 +80,5 @@ var MessageCreator = (function() {
       )
     }
 
-    return publicMethods
+    return pub
 })();

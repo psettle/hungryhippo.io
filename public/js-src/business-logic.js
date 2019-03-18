@@ -1,5 +1,5 @@
 var BusinessLogic = (function() {
-    var publicMethods = {} //no one calls business logic
+    var pub = {} //no one calls business logic
     
     //This is basically a promises system, theres probably a cleaner way
     //to do this
@@ -14,22 +14,44 @@ var BusinessLogic = (function() {
     }
 
     function onReady() {
-        Movement.subscribe(onDirectionChanged)
         AppServer.subscribe(processGamestateUpdate)
         initNicknameTextbox()
 
-        var fruit1 = SpriteDrawing.Fruit.drawFruit(0.5, 0.5, 0.05);
-        var fruit2 = SpriteDrawing.Fruit.drawFruit(0.1, 0.1, 0.25);  
+        SpriteDrawing.Fruit.drawFruit(0.25, 0.25, 0.1)
     }
 
-    function onDirectionChanged(dx, dy) {
-        //TODO: draw local direction from cursor
-        //console.log(dx, dy)
+    var gamestate = {
+        local : {
+            player: null,           //the player associated with this client
+            change: {               //local changes in position that haven't been sent to the server
+                x: 0,
+                y: 0
+            },
+            playerSprite: null,     //the sprite of the player assocaited with this client
+            scale: 0.2,             //the scale of the local player
+        },
+        players : {
+
+        }
     }
 
     function processGamestateUpdate(players, fruits) {
-        //TODO: draw current gamestate from update
-        console.log(players)
+        //send an update based on changes since the last update
+        updateRemotePosition()
+
+        //manage player sprites using new info
+        PlayerManager.playersUpdated(players)
+    }
+
+    function updateRemotePosition() {
+        //send a request to update position based on how far we went since the last update
+        var pos = PlayerManager.getLocalPosition()
+
+        if(pos == null) {
+            return
+        }
+
+        AppServer.sendPositionUpdateRequest(pos.x, pos.y, pos.dir)
     }
 
     function initNicknameTextbox() {
@@ -75,5 +97,5 @@ var BusinessLogic = (function() {
         search.focus();
     }
 
-    return publicMethods
+    return pub
 })();
