@@ -100,7 +100,7 @@ var FruitManager = (function() {
         record.dbRecord = fruit 
 
         fruitRecords[fruit.id] = record
+    }
 
-        //SpriteDrawing.Sprite.setGamePositionHandler(sprite, onGamePositionUpdate)
-    }  
-});
+    return pub
+})();
