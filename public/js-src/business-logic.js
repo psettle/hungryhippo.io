@@ -1,8 +1,8 @@
 var BusinessLogic = (function() {
-    var publicMethods = {} //no one calls business logic
+    var publicMethods = {}; //no one calls business logic
+    let scoreboard = null;
     
-    //This is basically a promises system, theres probably a cleaner way
-    //to do this
+    //This is basically a promises system, theres probably a cleaner way to do this
     var dependencyCount = 1;
     SpriteDrawing.ready(readyYet);
 
@@ -13,11 +13,9 @@ var BusinessLogic = (function() {
         }
     }
 
-    let scoreboard = null
-
     function onReady() {
-        Movement.subscribe(onDirectionChanged)
-        AppServer.subscribe(processGamestateUpdate)
+        Movement.subscribe(onDirectionChanged);
+        AppServer.subscribe(processGamestateUpdate);
         initNicknameTextbox()
 
         scoreboard = new Scoreboard();
@@ -29,56 +27,52 @@ var BusinessLogic = (function() {
 
     function onDirectionChanged(dx, dy) {
         //TODO: draw local direction from cursor
-        console.log(dx, dy)
+        //console.log(dx, dy)
     }
 
     function processGamestateUpdate(players, fruits) {
         //TODO: draw current gamestate from update
+        console.log(players);
         scoreboard.update(players);
     }
 
     function initNicknameTextbox() {
         //grab relevant elements
-        var input = $('.search-form');
-        var search = $('input')
-        var button = $('button');
+        let input = $('.search-form');
+        let search = $('input');
+        let button = $('button');
 
         input.on('keyup', function (e) {
             //treat enter as a click on the button
-            if( e.keyCode == 13) {
+            if( e.keyCode === 13) {
                 button.trigger('click')
             }
-        })
+        });
         
         button.on('click', function(e) {
-            nickname = search.val()
+            let nickname = search.val();
 
-            if (nickname == "") {
-                //no name in the field
-                return
-            }
+            if (nickname === '') return; // no name in the field
 
-            search.val("")
+            search.val('');
 
             //send the new player request
-            AppServer.sendNewPlayerRequest(nickname)
+            AppServer.sendNewPlayerRequest(nickname);
             //hide the nickname box
             input.removeClass('active');
-        })
+        });
         search.on('focus', function() {
             input.addClass('focus');
-        })
+        });
 
         search.on('blur', function() {
-            search.val().length != 0 ? 
-                input.addClass('focus') :
-                input.removeClass('focus');
-        })
+            search.val().length !== 0 ? input.addClass('focus') : input.removeClass('focus');
+        });
 
         //trigger an 'open' animation
         input.addClass('active');
         search.focus();
     }
 
-    return publicMethods
+    return publicMethods;
 })();
