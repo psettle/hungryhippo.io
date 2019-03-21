@@ -5,7 +5,6 @@ class Scoreboard {
         if (players === null) return;
         // find the current player
         let clientID = AppServer.getClientID();
-        console.log('client id: ' + clientID);
         let myIndex = players.findIndex(function(player) {
             return player.id === clientID;
         });
