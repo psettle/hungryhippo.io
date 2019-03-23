@@ -3,67 +3,72 @@ class Scoreboard {
     // Updates the scoreboard
     update(players) {
         if (players === null) return;
-        // find the current player
+        // Find the current player
         let clientID = AppServer.getClientID();
-        console.log('client id: ' + clientID);
         let myIndex = players.findIndex(function(player) {
             return player.id === clientID;
         });
-        // find the top ten players
+        // Find the top ten players
         players = this.sortByKey(players, 'points').slice(0, 10);
-        // clear the table
+        // Clear the table
         $("#scoreboard").find("tr:gt(0)").remove();
         players.forEach(function(player, index) {
             if (player.id === clientID) {
                 $("#scoreboard").append(
-                    '<tr>' +
-                        `<td><strong>${index + 1}.</strong></td>` +
-                        `<td><strong>${player.nickname}</strong></td>` +
-                        `<td><strong>${player.points}</strong></td>`+
-                    '</tr>');
+                    '<tbody>' +
+                        '<tr>' +
+                            `<td><strong>${index + 1}.</strong></td>` +
+                            `<td><strong>${player.nickname}</strong></td>` +
+                            `<td><strong>${player.points}</strong></td>`+
+                        '</tr>' +
+                    '</tbody>'
+                );
             } else {
                 $("#scoreboard").append(
-                    '<tr>' +
-                        `<td>${index + 1}.</td>` +
-                        `<td>${player.nickname}</td>` +
-                        `<td>${player.points}</td>`+
-                    '</tr>');
+                    '<tbody>' +
+                        '<tr>' +
+                            `<td>${index + 1}.</td>` +
+                            `<td>${player.nickname}</td>` +
+                            `<td>${player.points}</td>`+
+                        '</tr>' +
+	                '</tbody>'
+                );
             }
         });
         if (myIndex > 9) {
             $("#scoreboard").append(
-                '<tr>' +
-                    '<td></td>' +
-                '</tr>' +
-                '<tr>' +
-                    `<td><strong>${myIndex + 1}</strong></td>` +
-                    `<td><strong>${players[myIndex].nickname}</strong></td>` +
-                    `<td><strong>${players[myIndex].points}</strong></td>`+
-                '</tr>');
+            	'<tbody>' +
+                    '<tr>' +
+                        '<td></td>' +
+                    '</tr>' +
+	                '<tr>' +
+                        `<td><strong>${myIndex + 1}</strong></td>` +
+                        `<td><strong>${players[myIndex].nickname}</strong></td>` +
+                        `<td><strong>${players[myIndex].points}</strong></td>`+
+                    '</tr>' +
+	            '</tbody>'
+            );
         }
     }
-    // Render the scoreboard without data
+    // Renders the scoreboard without data
     renderView() {
         let table = $(
-            `<div class="container">` +
-                `<div class="row">` +
-                    `<div class="col-8"></div>` +
-                    `<div class="col-4">` +
-                        `<table class="table table-striped" id="scoreboard">` +
-                            `<thead>` +
-                                `<tr>` +
-                                    `<th>#</th>` +
-                                    `<th>Nicknames</th>` +
-                                    `<th>Points</th>` +
-                                `</tr>` +
-                            `</thead>` +
-                        `</table>` +
-                    `</div>` +
-                `</div>` +
-            `</div>`);
+	        '<div class="d-flex">' +
+	            '<div class="p-2">' +
+	                '<table class="table table-striped" id="scoreboard">' +
+	                    '<thead>' +
+	                        '<tr>' +
+	                            '<th>#</th>' +
+	                            '<th>Nicknames</th>' +
+	                            '<th>Points</th>' +
+	                        '</tr>' +
+	                    '</thead>' +
+	                '</table>' +
+	            '</div>' +
+	        '</div>'
+        );
         $("body").append(table);
     }
-
     // Sorts the array in descending order
     sortByKey(array, key) {
         return array.sort(function(a, b) {
