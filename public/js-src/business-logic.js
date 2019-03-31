@@ -108,7 +108,6 @@ var BusinessLogic = (function() {
 
         var locallyConsumedPlayers = PlayerManager.getLocallyConsumedPlayers()
         for (var j = 0; j < locallyConsumedPlayers.length; j++) {
-            console.log(locallyConsumedPlayers[j])
             AppServer.sendPlayerConsumptionRequest(locallyConsumedPlayers[j])
         }
         PlayerManager.resetLocallyConsumedPlayers()

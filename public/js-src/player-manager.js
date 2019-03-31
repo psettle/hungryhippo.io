@@ -359,7 +359,7 @@ var PlayerManager = (function() {
             var playerSprite = player.sprite
             var playerConsumed = SpriteDrawing.Collision.checkForCollision(local.sprite, playerSprite)
 
-            if (playerConsumed) {
+            if (playerConsumed && playerScore <= local.dbRecord.points) {
                 locallyConsumedPlayers.push(id)
             }
         }
