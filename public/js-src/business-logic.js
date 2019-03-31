@@ -46,6 +46,8 @@ var BusinessLogic = (function() {
         PlayerManager.playersUpdated(players)
 
         FruitManager.fruitsUpdated(fruits)
+
+        sendConsumptionRequests()
     }
 
     function updateRemotePosition() {
@@ -95,6 +97,21 @@ var BusinessLogic = (function() {
         //trigger an 'open' animation
         input.addClass('active');
         search.focus();
+    }
+
+    function sendConsumptionRequests() {
+        var locallyConsumedFruits = FruitManager.getLocallyConsumedFruit()
+        for (var i = 0; i < locallyConsumedFruits.length; i++) {
+            AppServer.sendFruitConsumptionRequest(locallyConsumedFruits[i])
+        }
+        FruitManager.resetLocallyConsumedFruit()
+
+        var locallyConsumedPlayers = PlayerManager.getLocallyConsumedPlayers()
+        for (var j = 0; j < locallyConsumedPlayers.length; j++) {
+            console.log(locallyConsumedPlayers[j])
+            AppServer.sendPlayerConsumptionRequest(locallyConsumedPlayers[j])
+        }
+        PlayerManager.resetLocallyConsumedPlayers()
     }
 
     return pub

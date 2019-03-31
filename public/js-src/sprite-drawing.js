@@ -58,6 +58,11 @@ var SpriteDrawing = (function() {
             setGamePositionHandler: function(sprite, cb) {
                 sprite.updateGamePos = cb
             }
+        },
+        Collision: {
+            checkForCollision: function(sprite1, sprite2) {
+                return checkForCollision(sprite1, sprite2)
+            }
         }
     }
 
@@ -78,6 +83,8 @@ var SpriteDrawing = (function() {
 
     //init for pixi.js, must be ran before api functions below are called
     $(document).ready(init.readyYet);
+
+    var bump = new Bump(app.renderer)
 
     function onReady() {
         app.renderer.view.style.position = "absolute";
@@ -227,6 +234,10 @@ var SpriteDrawing = (function() {
         stage.addChild(state.background);
 
         app.stage.addChild(stage)
+    }
+
+    function checkForCollision(sprite1, sprite2) {
+        return bump.hit(sprite1, sprite2)
     }
 
     return pub;

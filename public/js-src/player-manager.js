@@ -13,6 +13,18 @@ var PlayerManager = (function() {
 
         getLocalScore: function() {
             return getLocalScore()
+        },
+
+        getLocalSprite: function() {
+            return getLocalSprite()
+        },
+
+        getLocallyConsumedPlayers: function() {
+            return getLocallyConsumedPlayers()
+        },
+
+        resetLocallyConsumedPlayers: function() {
+            resetLocallyConsumedPlayers()
         }
     }
 
@@ -34,8 +46,9 @@ var PlayerManager = (function() {
         }
     }
 
-    var playerRecords = {}
     var local = null
+    var playerRecords = {}
+    var locallyConsumedPlayers = []
 
     function playersUpdated(players) {
         //first, we need an accurate local copy for doing relative rendering
@@ -56,6 +69,8 @@ var PlayerManager = (function() {
 
         //set all players to the correct positions relative to the local player
         setPlayerPosition()
+
+        checkForLocallyConsumedPlayers()
     }
 
     function updateLocal(players) {
@@ -238,6 +253,22 @@ var PlayerManager = (function() {
         return local.dbRecord.points
     }
 
+    function getLocalSprite() {
+        if(local == null) {
+            return null
+        }
+
+        return local.sprite
+    }
+
+    function getLocallyConsumedPlayers() {
+        return locallyConsumedPlayers
+    }
+
+    function resetLocallyConsumedPlayers() {
+        locallyConsumedPlayers.length = 0
+    }
+
     function createLocalPlayer(player) {
         //draw self in middle of window
         var sprite = SpriteDrawing.Player.drawPlayer(0.5, 0.5, PositionManager.playerScale)
@@ -316,6 +347,22 @@ var PlayerManager = (function() {
         dy *= PositionManager.speed
 
         SpriteDrawing.Player.setLocalSpeed(local.sprite, dx, dy)
+    }
+
+    function checkForLocallyConsumedPlayers() {
+        for(var id in playerRecords) {
+            var player = playerRecords[id]
+            if(player.isLocal) {
+                continue
+            }
+            var playerScore = player.dbRecord.points
+            var playerSprite = player.sprite
+            var playerConsumed = SpriteDrawing.Collision.checkForCollision(local.sprite, playerSprite)
+
+            if (playerConsumed) {
+                locallyConsumedPlayers.push(id)
+            }
+        }
     }
 
     return pub
