@@ -76,7 +76,7 @@ var FruitManager = (function() {
     }
 
     function resetLocallyConsumedFruit() {
-        locallyConsumedFruit.length = 0
+        locallyConsumedFruit = []
     }
 
     function setFruitScale() {

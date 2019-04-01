@@ -266,7 +266,7 @@ var PlayerManager = (function() {
     }
 
     function resetLocallyConsumedPlayers() {
-        locallyConsumedPlayers.length = 0
+        locallyConsumedPlayers = []
     }
 
     function createLocalPlayer(player) {
