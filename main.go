@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"hungryhippo.io/go-src/hhclientmanager"
-	"hungryhippo.io/go-src/hhloadbalancer"
-	"hungryhippo.io/go-src/hhserver"
+	"github.com/psettle/hungryhippo.io/go-src/hhclientmanager"
+	"github.com/psettle/hungryhippo.io/go-src/hhloadbalancer"
+	"github.com/psettle/hungryhippo.io/go-src/hhserver"
 )
 
 const (

@@ -114,7 +114,6 @@ func handleWebsocket(conn *websocket.Conn) {
 	//create a record for the connection
 	connectionRecord := activeConnection{}
 	connectionRecord.conn = conn
-
 	clientID := uuid.Must(uuid.NewV4())
 	connectionRecord.clientID = &clientID
 	activeConnections.newConn <- &connectionRecord

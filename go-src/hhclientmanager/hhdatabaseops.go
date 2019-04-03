@@ -3,7 +3,7 @@ package hhclientmanager
 import (
 	"math"
 
-	"hungryhippo.io/go-src/hhdatabase"
+	"github.com/psettle/hungryhippo.io/go-src/hhdatabase"
 )
 
 const xBoardWidth = 1000.0

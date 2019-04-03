@@ -5,7 +5,7 @@ import (
 	"log"
 	"strconv"
 
-	"hungryhippo.io/go-src/hhdatabase"
+	"github.com/psettle/hungryhippo.io/go-src/hhdatabase"
 
 	"github.com/bitly/go-simplejson"
 )

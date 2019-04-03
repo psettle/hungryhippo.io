@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/psettle/hungryhippo.io/go-src/hhdatabase"
+	"github.com/psettle/hungryhippo.io/go-src/hhserver"
 	uuid "github.com/satori/go.uuid"
-	"hungryhippo.io/go-src/hhdatabase"
-	"hungryhippo.io/go-src/hhserver"
 )
 
 //HandleClients registers for websocket requests then accepts and responds to requests
