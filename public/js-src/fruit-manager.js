@@ -2,10 +2,19 @@ var FruitManager = (function() {
     var pub = {
         fruitsUpdated: function(fruits) {
             fruitsUpdated(fruits)
+        },
+
+        getLocallyConsumedFruit: function() {
+            return getLocallyConsumedFruit()
+        },
+
+        resetLocallyConsumedFruit: function() {
+            resetLocallyConsumedFruit()
         }
     }
 
     var fruitRecords = {}
+    var locallyConsumedFruit = []
 
     function fruitRecord() {
         return {
@@ -27,6 +36,8 @@ var FruitManager = (function() {
         setFruitScale()
 
         setFruitPosition()
+
+        checkForLocallyConsumedFruit()
     }
 
     function fixFruitSet(fruits) {
@@ -60,6 +71,14 @@ var FruitManager = (function() {
         }
     }
 
+    function getLocallyConsumedFruit() {
+        return locallyConsumedFruit
+    }
+
+    function resetLocallyConsumedFruit() {
+        locallyConsumedFruit = []
+    }
+
     function setFruitScale() {
         var localPlayerSize = PlayerManager.getLocalScore()
 
@@ -82,6 +101,19 @@ var FruitManager = (function() {
             var mapPosition = PositionManager.gameToScreen(localPlayerPosition, fruitPosition)
 
             SpriteDrawing.Sprite.setPosition(fruit.sprite, mapPosition.x, mapPosition.y)
+        }
+    }
+
+    function checkForLocallyConsumedFruit() {
+        var localPlayerSprite = PlayerManager.getLocalSprite()
+
+        for(var id in fruitRecords) {
+            var fruitSprite = fruitRecords[id].sprite
+            var fruitConsumed = SpriteDrawing.Collision.checkForCollision(localPlayerSprite, fruitSprite)
+
+            if (fruitConsumed) {
+                locallyConsumedFruit.push(id)
+            }
         }
     }
 
