@@ -17,7 +17,7 @@ var upgrader = websocket.Upgrader{
 //StartServer starts the core http server for new clients;
 func StartServer(port string) {
 	//register with the load balancer
-	_, err := http.Get("http://localhost:80/as?app-server-ip=localhost&app-server-port=" + port)
+	_, err := http.Get("http://loadbalancer:80/as?app-server-ip=localhost&app-server-port=" + port)
 
 	if err != nil {
 		fmt.Println("Failed to register with app server: ", err)
