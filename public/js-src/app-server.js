@@ -31,7 +31,7 @@ var AppServer = (function() {
 
     $.get("/ws", function(data) {
         server = JSON.parse(data)
-        ws = new WebSocket("ws://" + server.ip + ":" + server.port + "/ws")
+        ws = new WebSocket("ws://" + 'localhost' + ":" + server.port + "/ws")
         ws.addEventListener('message', event => {
             onWebsocketReceive(JSON.parse(event.data))
         });

@@ -4,9 +4,6 @@ services:
     build: .
     ports:
       - "80:80"
-  appserver:
-    build: '/appserverdock'
-    ports:
       - "8000:8000"
   redis:
     image: "redis:alpine"

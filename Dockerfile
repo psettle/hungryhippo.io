@@ -4,5 +4,6 @@ RUN mkdir /app
 WORKDIR /app
 COPY . .
 RUN go build -o main .
+COPY wrapperscript.sh wrapperscript.sh
 
-CMD ["/app/main", "loadbalancer", "80"]
+ENTRYPOINT ["sh", "wrapperscript.sh"]
