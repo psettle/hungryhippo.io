@@ -136,7 +136,7 @@ var PlayerManager = (function() {
     }
 
     function setPlayerScale() {
-        var localSize = local.dbRecord.points + 1
+        var sizeDenominator = (local.dbRecord.points * 0.01) + 1
 
         for(var id in playerRecords) {
             var player = playerRecords[id]
@@ -145,7 +145,7 @@ var PlayerManager = (function() {
                 continue
             }
 
-            var relativeScale = (player.dbRecord.points + 1) / localSize
+            var relativeScale = ((player.dbRecord.points * 0.01) + 1) / sizeDenominator
             var absoluteScale = relativeScale * PositionManager.playerScale
 
             SpriteDrawing.Sprite.setScale(player.sprite, absoluteScale)
