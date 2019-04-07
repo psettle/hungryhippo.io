@@ -357,7 +357,7 @@ func consumePlayer(consumer *hhdatabase.Player, consumed *hhdatabase.Player) (bo
 		}
 
 		playerItem = item.(hhdatabase.Player)
-		consumerItem := &playerItem
+		consumerItem := playerItem
 
 		item, exists, err = hhdatabase.Load(consumed, conn)
 		if err != nil {
@@ -370,7 +370,7 @@ func consumePlayer(consumer *hhdatabase.Player, consumed *hhdatabase.Player) (bo
 		}
 
 		playerItem = item.(hhdatabase.Player)
-		consumedItem := &playerItem
+		consumedItem := playerItem
 
 		//TODO: validate that consumption is allowed
 
@@ -403,8 +403,9 @@ func consumePlayer(consumer *hhdatabase.Player, consumed *hhdatabase.Player) (bo
 
 		if applied {
 			//copy consumer/consumed over in case caller want the new scores
-			*consumer = *consumerItem
-			*consumed = *consumedItem
+			*consumer = consumerItem
+			*consumed = consumedItem
+
 			return true, nil
 		}
 
