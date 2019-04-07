@@ -48,7 +48,8 @@ func sendGamestateUpdateMessage() {
 	message, err := createGamestateUpdateMessage()
 
 	if err != nil {
-		//perhaps the database has crashed...
+		//implies primary database is not accessbile
+		hhdatabase.OnPrimaryFailure()
 		fmt.Println(err)
 		return
 	}
@@ -101,6 +102,9 @@ func handleClientRequest(clientID *uuid.UUID, message *simplejson.Json) {
 func handleClientDisconnect(clientID *uuid.UUID) error {
 	player := hhdatabase.CreatePlayer(clientID)
 	_, err := deletePlayer(player)
+	if err != nil {
+		hhdatabase.OnPrimaryFailure()
+	}
 	return err
 }
 
@@ -133,6 +137,8 @@ func handleNewPlayerRequest(clientID *uuid.UUID, message *simplejson.Json) error
 	var applied bool
 	applied, err = createNewPlayer(player, fruit)
 	if err != nil {
+		//error implies database is not accessible
+		hhdatabase.OnPrimaryFailure()
 		return err
 	}
 
@@ -171,6 +177,9 @@ func handlePositionUpdateRequest(clientID *uuid.UUID, message *simplejson.Json) 
 
 	//apply update
 	_, err := updatePlayerPosition(hhdatabase.CreatePlayer(clientID), newX, newY, newDirection)
+	if err != nil {
+		hhdatabase.OnPrimaryFailure()
+	}
 	return err
 }
 
@@ -199,6 +208,9 @@ func handleConsumeFruitRequest(clientID *uuid.UUID, message *simplejson.Json) er
 
 	//consume the fruit
 	_, err := consumeFruit(player, fruit, newFruit)
+	if err != nil {
+		hhdatabase.OnPrimaryFailure()
+	}
 	return err
 }
 
@@ -228,5 +240,8 @@ func handleConsumePlayerRequest(clientID *uuid.UUID, message *simplejson.Json) e
 
 	//apply consumption
 	_, err := consumePlayer(consumer, consumed)
+	if err != nil {
+		hhdatabase.OnPrimaryFailure()
+	}
 	return err
 }

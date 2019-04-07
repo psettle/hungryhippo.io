@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type appServerRecord struct {
@@ -17,11 +18,23 @@ type appServers struct {
 	lock    sync.Mutex
 }
 
+type dbRecord struct {
+	ip   string
+	port string
+}
+
+type dbServers struct {
+	dbs  []dbRecord
+	lock sync.Mutex
+}
+
 var servers appServers
+var dbs dbServers
 
 //StartServer starts the core http server for new clients;
 func StartServer() {
 	servers = appServers{}
+	dbs = dbServers{}
 	//setup static resource handlers
 	htmlFileServer := http.FileServer(http.Dir("public/html-src/"))
 	http.Handle("/", htmlFileServer)
@@ -35,6 +48,7 @@ func StartServer() {
 	//setup dynamic resource handler
 	http.HandleFunc("/ws", handleWebsocketRequest)
 	http.HandleFunc("/as/", handleAppServerRegister)
+	http.HandleFunc("/db/", handleDatabaseRegister)
 
 	http.ListenAndServe(":80", nil)
 }
@@ -56,6 +70,7 @@ func handleWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 
 		//found the dead server, delete it
 		servers.lock.Lock()
+		fmt.Println("App Server Dead " + deadIP + ":" + deadPort)
 		servers.servers = append(servers.servers[:i], servers.servers[i+1:]...)
 		servers.lock.Unlock()
 		break
@@ -106,8 +121,78 @@ func handleAppServerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go distributeExistingDatabases(&appServer)
 	servers.servers = append(servers.servers, appServer)
 	servers.lock.Unlock()
 
 	//TODO: response with existing databases
+}
+
+func handleDatabaseRegister(w http.ResponseWriter, r *http.Request) {
+	dbInstance := dbRecord{}
+
+	values := r.URL.Query()
+
+	dbInstance.ip = values.Get("db-ip")
+	dbInstance.port = values.Get("db-port")
+
+	fmt.Println("Database Register " + dbInstance.ip + ":" + dbInstance.port)
+
+	dbs.lock.Lock()
+
+	//check if we already have that db
+	for _, db := range dbs.dbs {
+		if db.ip != dbInstance.ip {
+			continue
+		}
+
+		if db.port != dbInstance.port {
+			continue
+		}
+
+		//we already know about this db, perhaps the configurer added it twice
+		return
+	}
+
+	distributeNewDatabase(&dbInstance)
+	dbs.dbs = append(dbs.dbs, dbInstance)
+	dbs.lock.Unlock()
+}
+
+func distributeExistingDatabases(appserver *appServerRecord) {
+	//take a sec to ensure the app server has initialized
+	time.Sleep(100 * time.Millisecond)
+	base := "http://" + appserver.ip + ":" + appserver.port + "/db?"
+
+	dbs.lock.Lock()
+	for _, db := range dbs.dbs {
+		query := base + "db-ip=" + db.ip + "&db-port=" + db.port
+		_, err := http.Get(query)
+
+		if err != nil {
+			//err typically means that the app server has gone down
+			//this is not the time to recover from that
+			//we will recover when the re-routed clients tell the load balancer that
+			//the app server died
+		}
+	}
+	dbs.lock.Unlock()
+}
+
+func distributeNewDatabase(db *dbRecord) {
+	base := "db-ip=" + db.ip + "&db-port=" + db.port
+
+	for _, appServer := range servers.servers {
+
+		query := "http://" + appServer.ip + ":" + appServer.port + "/db?" + base
+
+		_, err := http.Get(query)
+
+		if err != nil {
+			//err typically means that the app server has gone down
+			//this is not the time to recover from that
+			//we will recover when the re-routed clients tell the load balancer that
+			//the app server died
+		}
+	}
 }
