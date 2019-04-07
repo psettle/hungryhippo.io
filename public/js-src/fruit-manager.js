@@ -85,7 +85,7 @@ var FruitManager = (function() {
         for(var id in fruitRecords) {
             var fruit = fruitRecords[id]
 
-            var scale = PositionManager.fruitScale / (localPlayerSize + 1)
+            var scale = PositionManager.fruitScale / ((localPlayerSize * 0.01) + 1)
             SpriteDrawing.Sprite.setScale(fruit.sprite, scale)
         }
     }

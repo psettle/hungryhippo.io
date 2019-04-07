@@ -107,7 +107,7 @@ func createGamestateUpdateMessage() (*simplejson.Json, error) {
 func playerToSimplejson(player *hhdatabase.Player) *simplejson.Json {
 	json, err := simplejson.NewJson([]byte(`{
 		"id" : "` + player.ID.String() + `",
-		"points" : 0,
+		"points" : "` + fmt.Sprintf("%d", player.Score) + `",
 		"nickname" : "` + player.Name + `",
 		"location" : {
 			"centre": {
