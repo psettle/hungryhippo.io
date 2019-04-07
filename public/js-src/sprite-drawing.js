@@ -90,6 +90,8 @@ var SpriteDrawing = (function() {
     var fruitGroup = new PIXI.display.Group(1, false);
     var hippoGroup = new PIXI.display.Group(2, false);
     app.stage = new PIXI.display.Stage();
+    //Don't reorder these because the zIndex value given to the contructor of the groups
+    //doesn't actually do anything as of this version of pixi-display and relies on this ordering
     app.stage.addChild(new PIXI.display.Layer(backgroundGroup));
     app.stage.addChild(new PIXI.display.Layer(fruitGroup));
     app.stage.addChild(new PIXI.display.Layer(hippoGroup));
