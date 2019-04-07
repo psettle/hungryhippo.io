@@ -48,7 +48,6 @@ func sendGamestateUpdateMessage() {
 	message, err := createGamestateUpdateMessage()
 
 	if err != nil {
-		//perhaps the database has crashed...
 		fmt.Println(err)
 		return
 	}

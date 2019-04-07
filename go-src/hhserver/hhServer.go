@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	uuid "github.com/satori/go.uuid"
+	"hungryhippo.io/go-src/hhdatabase"
 )
 
 var upgrader = websocket.Upgrader{
@@ -40,6 +41,9 @@ func StartServer(port string) {
 	//setup websocket entry point
 	http.HandleFunc("/ws", socketRequestHandler)
 
+	//setup database register handler
+	http.HandleFunc("/db/", handleDatabaseRegister)
+
 	http.ListenAndServe(":"+port, nil)
 }
 
@@ -62,4 +66,12 @@ func socketRequestHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		go handleWebsocketRejoin(conn, &reJoinUUID)
 	}
+}
+
+func handleDatabaseRegister(w http.ResponseWriter, r *http.Request) {
+	values := r.URL.Query()
+	ip := values.Get("db-ip")
+	port := values.Get("db-port")
+
+	hhdatabase.NewDatabaseInstance(ip, port)
 }
