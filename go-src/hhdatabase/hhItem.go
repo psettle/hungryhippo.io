@@ -38,6 +38,9 @@ type Item interface {
 //requires a close call after the transaction is complete.
 func Watch(i Item, conn *redis.Client) error {
 	reply := conn.Cmd("WATCH", i.getWatchKey())
+	if reply.Err != nil {
+		OnPrimaryFailure()
+	}
 	return reply.Err
 }
 
@@ -45,6 +48,7 @@ func Watch(i Item, conn *redis.Client) error {
 func Load(i Item, conn *redis.Client) (Item, bool, error) {
 	reply, err := conn.Cmd("HMGET", i.getValueKey(), i.listKeys()).List()
 	if err != nil {
+		OnPrimaryFailure()
 		return nil, false, err
 	}
 
@@ -64,6 +68,7 @@ func LoadRandom(itemtype Item, conn *redis.Client) (Item, bool, error) {
 	//fetch 1 random element
 	reply, err := conn.Cmd("SRANDMEMBER", itemtype.getMembersKey(), 1).List()
 	if err != nil {
+		OnPrimaryFailure()
 		return nil, false, err
 	}
 
@@ -83,6 +88,9 @@ func LoadRandom(itemtype Item, conn *redis.Client) (Item, bool, error) {
 //          of the provided type, not if an existing member is modified
 func WatchType(itemtype Item, conn *redis.Client) error {
 	reply := conn.Cmd("WATCH", itemtype.getMembersKey())
+	if reply.Err != nil {
+		OnPrimaryFailure()
+	}
 	return reply.Err
 }
 
@@ -96,6 +104,7 @@ func WatchMany(itemtype Item, items []*Item, conn *redis.Client) error {
 	//start with a watch on the item set
 	err := WatchType(itemtype, conn)
 	if err != nil {
+		//db failure handled in WatchType
 		return err
 	}
 
@@ -105,6 +114,7 @@ func WatchMany(itemtype Item, items []*Item, conn *redis.Client) error {
 		var err error
 		idStrings, err = conn.Cmd("SMEMBERS", itemtype.getMembersKey()).List()
 		if err != nil {
+			OnPrimaryFailure()
 			return err
 		}
 	} else {
@@ -117,6 +127,7 @@ func WatchMany(itemtype Item, items []*Item, conn *redis.Client) error {
 	//put a watch on all members
 	reply := conn.Cmd("WATCH", idStrings)
 	if reply.Err != nil {
+		OnPrimaryFailure()
 		return reply.Err
 	}
 
@@ -139,6 +150,7 @@ func LoadMany(itemtype Item, items []*Item, conn *redis.Client) ([]*Item, []bool
 		//ids was nil, load all members into a list
 		idStrings, err = conn.Cmd("SMEMBERS", itemtype.getMembersKey()).List()
 		if err != nil {
+			OnPrimaryFailure()
 			return nil, nil, err
 		}
 	} else {
@@ -156,12 +168,14 @@ func LoadMany(itemtype Item, items []*Item, conn *redis.Client) ([]*Item, []bool
 		//ids was nil, load all item data into a map, then let each item parse their own members
 		entries, allErr := conn.Cmd("HGETALL", itemtype.getValueKey()).Map()
 		if allErr != nil {
+			OnPrimaryFailure()
 			return nil, nil, allErr
 		}
 
 		for _, id := range idStrings {
 			uuid, uuidErr := uuid.FromString(id)
 			if uuidErr != nil {
+				//not a database error
 				return nil, nil, uuidErr
 			}
 
@@ -181,6 +195,7 @@ func LoadMany(itemtype Item, items []*Item, conn *redis.Client) ([]*Item, []bool
 		for _, id := range idStrings {
 			uuid, uuidErr := uuid.FromString(id)
 			if uuidErr != nil {
+				//not a database error
 				return nil, nil, uuidErr
 			}
 
@@ -192,6 +207,7 @@ func LoadMany(itemtype Item, items []*Item, conn *redis.Client) ([]*Item, []bool
 
 		list, allErr := conn.Cmd("HMGET", itemtype.getValueKey(), keys).List()
 		if allErr != nil {
+			OnPrimaryFailure()
 			return nil, nil, allErr
 		}
 
@@ -213,18 +229,21 @@ func Save(i Item, conn *redis.Client) error {
 	//put the item id into the set of item
 	response := conn.Cmd("SADD", i.getMembersKey(), i.getWatchKey())
 	if response.Err != nil {
+		OnPrimaryFailure()
 		return response.Err
 	}
 
 	//save the item entry
 	response = conn.Cmd("HMSET", i.getValueKey(), i.mapKeys())
 	if response.Err != nil {
+		OnPrimaryFailure()
 		return response.Err
 	}
 
 	//write to the item watch, to prevent concurrent access
 	response = conn.Cmd("SET", i.getWatchKey(), "")
 	if response.Err != nil {
+		OnPrimaryFailure()
 		return response.Err
 	}
 
@@ -241,18 +260,21 @@ func Delete(i Item, conn *redis.Client) error {
 	//remove the item from the set of items
 	response := conn.Cmd("SREM", i.getMembersKey(), i.getWatchKey())
 	if response.Err != nil {
+		OnPrimaryFailure()
 		return response.Err
 	}
 
 	//delete the item entry
 	response = conn.Cmd("HDEL", i.getValueKey(), i.listKeys())
 	if response.Err != nil {
+		OnPrimaryFailure()
 		return response.Err
 	}
 
 	//delete the item watch, to prevent concurrent access
 	response = conn.Cmd("DEL", i.getWatchKey())
 	if response.Err != nil {
+		OnPrimaryFailure()
 		return response.Err
 	}
 

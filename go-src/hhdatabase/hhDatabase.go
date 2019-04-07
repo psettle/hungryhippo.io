@@ -100,7 +100,7 @@ func BeginOperation() (*redis.Client, error) {
 
 	conn, err := dbs.primary.Get()
 
-	if err == nil {
+	if err == nil && conn != nil {
 		dbs.looseLock.Lock()
 		dbs.looseCount++
 		dbs.looseLock.Unlock()
@@ -136,7 +136,9 @@ func Exec(conn *redis.Client) (bool, error) {
 func EndOperation(conn *redis.Client) {
 	dbs.primary.Put(conn)
 	dbs.looseLock.Lock()
-	dbs.looseCount--
+	if conn != nil {
+		dbs.looseCount--
+	}
 	dbs.looseLock.Unlock()
 }
 
