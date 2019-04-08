@@ -57,8 +57,9 @@ func handleWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 	//someone is asking for an app server to open a websocket to:
 
 	//first, check if the request has provided a dead server with it
-	deadIP := r.Header.Get("dead-app-server-ip")
-	deadPort := r.Header.Get("dead-app-server-port")
+	values := r.URL.Query()
+	deadIP := values.Get("dead-app-server-ip")
+	deadPort := values.Get("dead-app-server-port")
 	for i, record := range servers.servers {
 		if record.ip != deadIP {
 			continue

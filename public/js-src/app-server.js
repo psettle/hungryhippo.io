@@ -36,9 +36,15 @@ var AppServer = (function() {
             onWebsocketReceive(JSON.parse(event.data))
         });
 
-        ws.addEventListener("close", event => {
+        ws.addEventListener('error', event => {
+            console.log('websocket error')
             onWebsocketClose()
-        })
+        });
+
+        ws.addEventListener("close", event => {
+            console.log('websocket closed')
+            onWebsocketClose()
+        });
     })
 
     //callback for messages from the server
@@ -66,7 +72,7 @@ var AppServer = (function() {
         //grab a new app server, while telling the load balancer that an app server died
         $.get("/ws?dead-app-server-ip=" + server.ip + "&dead-app-server-port=" + server.port, function(data) {
             server = JSON.parse(data)
-            ws = new WebSocket("ws://" + server.ip + ":" + server.port + "/ws?rejoin-clientid=" + clientID)
+            ws = new WebSocket("ws://" +  window.location.hostname + ":" + server.port + "/ws?rejoin-clientid=" + clientID)
             ws.addEventListener('message', event => {
                 onWebsocketReceive(JSON.parse(event.data))
             });
