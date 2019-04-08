@@ -162,7 +162,7 @@ func handleDatabaseRegister(w http.ResponseWriter, r *http.Request) {
 func distributeExistingDatabases(appserver *appServerRecord) {
 	//take a sec to ensure the app server has initialized
 	time.Sleep(100 * time.Millisecond)
-	base := "http://" + appserver.ip + ":" + appserver.port + "/db?"
+	base := "http://" + appserver.ip + ":" + appserver.port + "/db/?"
 
 	dbs.lock.Lock()
 	for _, db := range dbs.dbs {

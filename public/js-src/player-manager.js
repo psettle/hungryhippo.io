@@ -211,8 +211,8 @@ var PlayerManager = (function() {
 
             //pixi runs at 60 fps equivalent, with dx, dy in pixels/frame
             //we expect these updates every 250 ms, therefore to do a smooth transition:
-            dExpectationX = (dExpectationX / (60 * 0.15))
-            dExpectationY = (dExpectationY / (60 * 0.15))
+            dExpectationX = (dExpectationX / (60 * 0.25))
+            dExpectationY = (dExpectationY / (60 * 0.25))
 
             dx += dExpectationX
             dy += dExpectationY            
