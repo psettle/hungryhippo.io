@@ -184,7 +184,7 @@ func distributeNewDatabase(db *dbRecord) {
 
 	for _, appServer := range servers.servers {
 
-		query := "http://" + appServer.ip + ":" + appServer.port + "/db?" + base
+		query := "http://" + appServer.ip + ":" + appServer.port + "/db/?" + base
 
 		_, err := http.Get(query)
 
