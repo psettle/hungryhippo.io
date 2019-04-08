@@ -6,4 +6,4 @@ COPY . .
 RUN go build -o main .
 COPY wrapperscript.sh wrapperscript.sh
 
-ENTRYPOINT ["sh", "wrapperscript.sh"]
+CMD ["sh", "wrapperscript.sh"]

@@ -151,7 +151,7 @@ var PlayerManager = (function() {
     }
 
     function setPlayerScale() {
-        var localSize = local.dbRecord.points + 1
+        var sizeDenominator = (local.dbRecord.points * 0.01) + 1
 
         for(var id in playerRecords) {
             var player = playerRecords[id]
@@ -160,7 +160,7 @@ var PlayerManager = (function() {
                 continue
             }
 
-            var relativeScale = (player.dbRecord.points + 1) / localSize
+            var relativeScale = ((player.dbRecord.points * 0.01) + 1) / sizeDenominator
             var absoluteScale = relativeScale * PositionManager.playerScale
 
             SpriteDrawing.Sprite.setScale(player.sprite, absoluteScale)
@@ -211,8 +211,8 @@ var PlayerManager = (function() {
 
             //pixi runs at 60 fps equivalent, with dx, dy in pixels/frame
             //we expect these updates every 250 ms, therefore to do a smooth transition:
-            dExpectationX = (dExpectationX / (60 * 0.25))
-            dExpectationY = (dExpectationY / (60 * 0.25))
+            dExpectationX = (dExpectationX / (60 * 0.15))
+            dExpectationY = (dExpectationY / (60 * 0.15))
 
             dx += dExpectationX
             dy += dExpectationY            

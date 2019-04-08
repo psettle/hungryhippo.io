@@ -14,7 +14,7 @@ var PositionManager = (function() {
             return toAngle(dx, dy)
         },
         mapSize: 1000,              //size of the map in 'game units'
-        mapScale: 2,               //how many screens it takes to cross the map
+        mapScale: 1,               //how many screens it takes to cross the map
         speed: 5,
         playerScale: 0.1,
         fruitScale: 0.05
