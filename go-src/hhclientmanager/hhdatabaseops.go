@@ -357,7 +357,7 @@ func consumePlayer(consumer *hhdatabase.Player, consumed *hhdatabase.Player) (bo
 		}
 
 		playerItem = item.(hhdatabase.Player)
-		consumerItem := &playerItem
+		consumerItem := playerItem
 
 		item, exists, err = hhdatabase.Load(consumed, conn)
 		if err != nil {
@@ -370,9 +370,12 @@ func consumePlayer(consumer *hhdatabase.Player, consumed *hhdatabase.Player) (bo
 		}
 
 		playerItem = item.(hhdatabase.Player)
-		consumedItem := &playerItem
+		consumedItem := playerItem
 
-		//TODO: validate that consumption is allowed
+		//fetch a random member of fruits to remove with the dead player
+		var fruitItem hhdatabase.Item
+		fruitItem, exists, err = hhdatabase.LoadRandom(hhdatabase.Fruit{}, conn)
+		fruit := fruitItem.(hhdatabase.Fruit)
 
 		//apply the consumption
 		consumerItem.Score += consumedItem.Score
@@ -395,6 +398,14 @@ func consumePlayer(consumer *hhdatabase.Player, consumed *hhdatabase.Player) (bo
 			return false, err
 		}
 
+		//only try to delete the fruit if we are sure it exists
+		if exists {
+			err = hhdatabase.Delete(fruit, conn)
+			if err != nil {
+				return false, err
+			}
+		}
+
 		var applied bool
 		applied, err = hhdatabase.Exec(conn)
 		if err != nil {
@@ -403,8 +414,9 @@ func consumePlayer(consumer *hhdatabase.Player, consumed *hhdatabase.Player) (bo
 
 		if applied {
 			//copy consumer/consumed over in case caller want the new scores
-			*consumer = *consumerItem
-			*consumed = *consumedItem
+			*consumer = consumerItem
+			*consumed = consumedItem
+
 			return true, nil
 		}
 

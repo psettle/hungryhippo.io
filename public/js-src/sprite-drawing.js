@@ -58,6 +58,11 @@ var SpriteDrawing = (function() {
             setGamePositionHandler: function(sprite, cb) {
                 sprite.updateGamePos = cb
             }
+        },
+        Collision: {
+            checkForCollision: function(sprite1, sprite2) {
+                return checkForCollision(sprite1, sprite2)
+            }
         }
     }
 
@@ -78,6 +83,18 @@ var SpriteDrawing = (function() {
 
     //init for pixi.js, must be ran before api functions below are called
     $(document).ready(init.readyYet);
+
+    var bump = new Bump(app.renderer);
+
+    var backgroundGroup = new PIXI.display.Group(0, false);
+    var fruitGroup = new PIXI.display.Group(1, false);
+    var hippoGroup = new PIXI.display.Group(2, false);
+    app.stage = new PIXI.display.Stage();
+    //Don't reorder these because the zIndex value given to the contructor of the groups
+    //doesn't actually do anything as of this version of pixi-display and relies on this ordering
+    app.stage.addChild(new PIXI.display.Layer(backgroundGroup));
+    app.stage.addChild(new PIXI.display.Layer(fruitGroup));
+    app.stage.addChild(new PIXI.display.Layer(hippoGroup));
 
     function onReady() {
         app.renderer.view.style.position = "absolute";
@@ -179,6 +196,7 @@ var SpriteDrawing = (function() {
             );
         watermelon.scale.set(scale, scale);
         watermelon.position.set(x, y);
+        watermelon.parentGroup = fruitGroup;
         app.stage.addChild(watermelon);
 
         state.sprites.push(watermelon)
@@ -203,6 +221,8 @@ var SpriteDrawing = (function() {
 
         hippo.scale.set(scale, scale);
         hippo.position.set(x, y);
+
+        hippo.parentGroup = hippoGroup;
         app.stage.addChild(hippo);
 
         state.sprites.push(hippo)
@@ -223,10 +243,15 @@ var SpriteDrawing = (function() {
         // create a tiling sprite
         state.background = new PIXI.extras.TilingSprite(texture, app.screen.width, app.screen.height);
         state.background.tileScale.set(2, 2)
-        setBackgroundSpeed(0, 0)
+        setBackgroundSpeed(0, 0);
         stage.addChild(state.background);
 
+        state.background.parentGroup = backgroundGroup;
         app.stage.addChild(stage)
+    }
+
+    function checkForCollision(sprite1, sprite2) {
+        return bump.hit(sprite1, sprite2)
     }
 
     return pub;

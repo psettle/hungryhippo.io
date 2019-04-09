@@ -30,7 +30,7 @@ func HandleClients() {
 	}()
 
 	//start game update task
-	gameUpdateTimer := time.NewTicker(time.Millisecond * 250)
+	gameUpdateTimer := time.NewTicker(time.Millisecond * 100)
 
 	go func() {
 		for {
@@ -48,7 +48,6 @@ func sendGamestateUpdateMessage() {
 	message, err := createGamestateUpdateMessage()
 
 	if err != nil {
-		//perhaps the database has crashed...
 		fmt.Println(err)
 		return
 	}

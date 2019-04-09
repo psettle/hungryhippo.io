@@ -1,8 +1,8 @@
 var BusinessLogic = (function() {
+    let scoreboard = null;
     var pub = {} //no one calls business logic
     
-    //This is basically a promises system, theres probably a cleaner way
-    //to do this
+    //This is basically a promises system, theres probably a cleaner way to do this
     var dependencyCount = 1;
     SpriteDrawing.ready(readyYet);
 
@@ -17,7 +17,8 @@ var BusinessLogic = (function() {
         AppServer.subscribe(processGamestateUpdate)
         initNicknameTextbox()
 
-        SpriteDrawing.Fruit.drawFruit(0.25, 0.25, 0.1)
+        scoreboard = new Scoreboard();
+        scoreboard.renderView();
     }
 
     var gamestate = {
@@ -39,8 +40,14 @@ var BusinessLogic = (function() {
         //send an update based on changes since the last update
         updateRemotePosition()
 
+        scoreboard.update(players);
+
         //manage player sprites using new info
         PlayerManager.playersUpdated(players)
+
+        FruitManager.fruitsUpdated(fruits)
+
+        sendConsumptionRequests()
     }
 
     function updateRemotePosition() {
@@ -56,45 +63,54 @@ var BusinessLogic = (function() {
 
     function initNicknameTextbox() {
         //grab relevant elements
-        var input = $('.search-form');
-        var search = $('input')
-        var button = $('button');
+        let input = $('.search-form');
+        let search = $('input');
+        let button = $('button');
 
         input.on('keyup', function (e) {
             //treat enter as a click on the button
-            if( e.keyCode == 13) {
+            if( e.keyCode === 13) {
                 button.trigger('click')
             }
-        })
+        });
         
         button.on('click', function(e) {
-            nickname = search.val()
+            let nickname = search.val();
 
-            if (nickname == "") {
-                //no name in the field
-                return
-            }
+            if (nickname === '') return; // no name in the field
 
-            search.val("")
+            search.val('');
 
             //send the new player request
-            AppServer.sendNewPlayerRequest(nickname)
+            AppServer.sendNewPlayerRequest(nickname);
             //hide the nickname box
             input.removeClass('active');
-        })
+        });
         search.on('focus', function() {
             input.addClass('focus');
-        })
+        });
 
         search.on('blur', function() {
-            search.val().length != 0 ? 
-                input.addClass('focus') :
-                input.removeClass('focus');
-        })
+            search.val().length !== 0 ? input.addClass('focus') : input.removeClass('focus');
+        });
 
         //trigger an 'open' animation
         input.addClass('active');
         search.focus();
+    }
+
+    function sendConsumptionRequests() {
+        var locallyConsumedFruits = FruitManager.getLocallyConsumedFruit()
+        for (var i = 0; i < locallyConsumedFruits.length; i++) {
+            AppServer.sendFruitConsumptionRequest(locallyConsumedFruits[i])
+        }
+        FruitManager.resetLocallyConsumedFruit()
+
+        var locallyConsumedPlayers = PlayerManager.getLocallyConsumedPlayers()
+        for (var j = 0; j < locallyConsumedPlayers.length; j++) {
+            AppServer.sendPlayerConsumptionRequest(locallyConsumedPlayers[j])
+        }
+        PlayerManager.resetLocallyConsumedPlayers()
     }
 
     return pub

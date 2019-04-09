@@ -9,6 +9,22 @@ var PlayerManager = (function() {
         //null if local player doesn't exist
         getLocalPosition: function() {
             return getLocalPosition()
+        },
+
+        getLocalScore: function() {
+            return getLocalScore()
+        },
+
+        getLocalSprite: function() {
+            return getLocalSprite()
+        },
+
+        getLocallyConsumedPlayers: function() {
+            return getLocallyConsumedPlayers()
+        },
+
+        resetLocallyConsumedPlayers: function() {
+            resetLocallyConsumedPlayers()
         }
     }
 
@@ -30,8 +46,9 @@ var PlayerManager = (function() {
         }
     }
 
-    var playerRecords = {}
     var local = null
+    var playerRecords = {}
+    var locallyConsumedPlayers = []
 
     function playersUpdated(players) {
         //first, we need an accurate local copy for doing relative rendering
@@ -52,6 +69,8 @@ var PlayerManager = (function() {
 
         //set all players to the correct positions relative to the local player
         setPlayerPosition()
+
+        checkForLocallyConsumedPlayers()
     }
 
     function updateLocal(players) {
@@ -132,7 +151,7 @@ var PlayerManager = (function() {
     }
 
     function setPlayerScale() {
-        var localSize = local.dbRecord.points + 1
+        var sizeDenominator = (local.dbRecord.points * 0.01) + 1
 
         for(var id in playerRecords) {
             var player = playerRecords[id]
@@ -141,7 +160,7 @@ var PlayerManager = (function() {
                 continue
             }
 
-            var relativeScale = (player.dbRecord.points + 1) / localSize
+            var relativeScale = ((player.dbRecord.points * 0.01) + 1) / sizeDenominator
             var absoluteScale = relativeScale * PositionManager.playerScale
 
             SpriteDrawing.Sprite.setScale(player.sprite, absoluteScale)
@@ -192,8 +211,8 @@ var PlayerManager = (function() {
 
             //pixi runs at 60 fps equivalent, with dx, dy in pixels/frame
             //we expect these updates every 250 ms, therefore to do a smooth transition:
-            dExpectationX = (dExpectationX / (60 * 0.25))
-            dExpectationY = (dExpectationY / (60 * 0.25))
+            dExpectationX = (dExpectationX / (60 * 0.1))
+            dExpectationY = (dExpectationY / (60 * 0.1))
 
             dx += dExpectationX
             dy += dExpectationY            
@@ -224,6 +243,30 @@ var PlayerManager = (function() {
             y: position.y,
             dir: angle
         }
+    }
+
+    function getLocalScore() {
+        if(local == null) {
+            return null
+        }
+
+        return local.dbRecord.points
+    }
+
+    function getLocalSprite() {
+        if(local == null) {
+            return null
+        }
+
+        return local.sprite
+    }
+
+    function getLocallyConsumedPlayers() {
+        return locallyConsumedPlayers
+    }
+
+    function resetLocallyConsumedPlayers() {
+        locallyConsumedPlayers = []
     }
 
     function createLocalPlayer(player) {
@@ -304,6 +347,22 @@ var PlayerManager = (function() {
         dy *= PositionManager.speed
 
         SpriteDrawing.Player.setLocalSpeed(local.sprite, dx, dy)
+    }
+
+    function checkForLocallyConsumedPlayers() {
+        for(var id in playerRecords) {
+            var player = playerRecords[id]
+            if(player.isLocal) {
+                continue
+            }
+            var playerScore = player.dbRecord.points
+            var playerSprite = player.sprite
+            var playerConsumed = SpriteDrawing.Collision.checkForCollision(local.sprite, playerSprite)
+
+            if (playerConsumed && playerScore <= local.dbRecord.points) {
+                locallyConsumedPlayers.push(id)
+            }
+        }
     }
 
     return pub
