@@ -78,7 +78,7 @@ var SpriteDrawing = (function() {
     loader
         .add("img/watermelon.png")
         .add("img/hippo.png")
-        .add("img/swampbig.png")
+        .add("img/water.png")
         .load(init.readyYet);
 
     //init for pixi.js, must be ran before api functions below are called
@@ -163,7 +163,7 @@ var SpriteDrawing = (function() {
     function setPosition(sprite, x, y) {
         x *= app.screen.width;
         y *= app.screen.height;
-        
+
         sprite.position.x = x
         sprite.position.y = y
     }
@@ -236,7 +236,7 @@ var SpriteDrawing = (function() {
 
     function backgroundInit() {
         // create a texture from an image path
-        var texture = loader.resources["img/swampbig.png"].texture
+        var texture = loader.resources["img/water.png"].texture
 
         var stage = new PIXI.Container();
 

@@ -62,8 +62,10 @@ func socketRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	//listen for messages
 	if reJoinID == "" || err != nil {
+		fmt.Printf("New Client Connected")
 		go handleWebsocket(conn)
 	} else {
+		fmt.Printf("Existing Client Re-routed")
 		go handleWebsocketRejoin(conn, &reJoinUUID)
 	}
 }
