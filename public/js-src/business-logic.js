@@ -40,6 +40,10 @@ var BusinessLogic = (function() {
         //send an update based on changes since the last update
         updateRemotePosition()
 
+        for(var i = 0; i < players.length; ++i) {
+            players[i].points = parseInt(players[i].points);
+        }
+
         scoreboard.update(players);
 
         //manage player sprites using new info
